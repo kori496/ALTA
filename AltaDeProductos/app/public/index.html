@@ -1,0 +1,1548 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="token" content="__TOKEN__">
+<title>ALTA</title>
+<style>
+  :root { --bg:#f5f6f8; --card:#fff; --ink:#1d2330; --muted:#6b7280; --line:#dde1e7; --accent:#2563eb; --danger:#dc2626; --ok:#15803d; --warn:#b45309; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--ink); }
+  header { background:#111827; color:#fff; padding:14px 20px; display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; }
+  header h1 { font-size:18px; margin:0; }
+  header .logo { margin-left:auto; padding:4px 12px; border:2px solid #fff; border-radius:6px; font-size:20px; font-weight:800; letter-spacing:.25em; text-indent:.25em; }
+  .acciones { display:flex; gap:8px; flex-wrap:wrap; }
+  main { padding:20px; display:grid; gap:20px; grid-template-columns: minmax(300px, 420px) 1fr; max-width:1400px; margin:0 auto; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; }
+  .card h2 { font-size:15px; margin:0 0 12px; }
+  label { display:block; font-size:12px; color:var(--muted); margin:8px 0 3px; }
+  input, select { width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:6px; font-size:14px; background:#fff; }
+  .fila { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .req::after { content:" *"; color:var(--danger); }
+  button { padding:8px 14px; border:0; border-radius:6px; background:var(--accent); color:#fff; font-size:14px; cursor:pointer; }
+  button.sec { background:#e5e7eb; color:var(--ink); }
+  button.peligro { background:var(--danger); }
+  button.imprimir { background:#16a34a; font-weight:700; }
+  button.mini { padding:4px 8px; font-size:12px; }
+  .msg { margin-top:10px; font-size:13px; min-height:18px; white-space:pre-line; }
+  .msg.ok { color:var(--ok); } .msg.error { color:var(--danger); } .msg.warn { color:var(--warn); }
+  .banner { display:none; background:#eff6ff; border:1px solid #bfdbfe; color:#1e3a8a; border-radius:8px; padding:8px 10px; font-size:13px; margin-bottom:10px; gap:8px; align-items:center; justify-content:space-between; }
+  .banner.on { display:flex; }
+  .desglose { background:#f9fafb; border:1px solid var(--line); border-radius:8px; padding:10px; margin-top:10px; font-size:13px; line-height:1.6; }
+  .desglose b { font-variant-numeric: tabular-nums; }
+  .botones { margin-top:14px; display:flex; gap:8px; flex-wrap:wrap; }
+  details { margin-top:16px; border-top:1px solid var(--line); padding-top:10px; }
+  summary { cursor:pointer; font-size:13px; color:var(--muted); }
+  .ayuda { font-size:12px; color:var(--muted); margin:8px 0 0; line-height:1.5; }
+  .ayuda li { margin-bottom:4px; }
+  .toolbar { display:flex; gap:8px; margin-bottom:10px; }
+  .toolbar input { flex:1; }
+  .tabla-wrap { overflow:auto; max-height:70vh; border:1px solid var(--line); border-radius:8px; }
+  table { border-collapse:collapse; width:100%; font-size:13px; background:#fff; }
+  th, td { padding:7px 9px; border-bottom:1px solid var(--line); text-align:left; white-space:nowrap; }
+  th { position:sticky; top:0; background:#f9fafb; font-weight:600; }
+  td.num, th.num { text-align:right; font-variant-numeric: tabular-nums; }
+  .vacio { text-align:center; color:var(--muted); padding:30px; }
+  .contador { font-size:13px; color:var(--muted); font-weight:400; margin-left:8px; }
+  .acc { display:flex; gap:4px; }
+  .fila-barras { display:flex; gap:6px; }
+  .fila-barras button { white-space:nowrap; }
+  .check { display:flex; align-items:center; gap:6px; font-size:13px; color:var(--ink); margin:8px 0; }
+  .check input { width:auto; }
+  .estado { font-size:12px; color:#d1d5db; margin-right:6px; }
+  .estado.error { color:#fca5a5; font-weight:600; }
+  .columna { display:grid; gap:20px; align-content:start; min-width:0; }
+  .columna > .card { min-width:0; }
+  .siigo-cols select, .siigo-cols input { padding:4px 6px; font-size:13px; }
+  .siigo-cols td { vertical-align:top; }
+  .siigo-cols textarea { width:100%; min-width:160px; font-size:12px; font-family:inherit; border:1px solid var(--line); border-radius:6px; }
+  .pill { display:inline-block; padding:1px 6px; border-radius:999px; font-size:11px; background:#e5e7eb; }
+  .pill.ob { background:#1e3a8a; color:#fff; }
+  .informe { font-size:13px; line-height:1.5; white-space:pre-line; margin-top:10px; }
+  .informe ul { margin:4px 0; padding-left:18px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="acciones">
+    <span class="estado" id="estadoGuardado">Cargando…</span>
+    <button class="sec" id="btnAbrir">Abrir otra base…</button>
+    <input type="file" id="archivoBase" accept=".sqlite,.db" hidden>
+    <button class="sec" id="btnGuardar">Descargar copia</button>
+    <button class="sec" id="btnCsv">Exportar CSV</button>
+    <button id="btnIrSiigo">Excel para Siigo</button>
+    <button id="btnImprimir" class="imprimir">Imprimir</button>
+  </div>
+  <h1 class="logo">ALTA</h1>
+</header>
+
+<main>
+  <section class="card">
+    <h2>Nuevo producto</h2>
+
+    <div class="banner" id="banner">
+      <span id="bannerTxt"></span>
+      <button class="mini sec" type="button" id="btnQuitarPlantilla">Quitar</button>
+    </div>
+
+    <form id="form" autocomplete="off">
+      <label class="req" for="barras">Código de barras (también es el código del producto)</label>
+      <div class="fila-barras">
+        <input id="barras" inputmode="numeric" maxlength="14">
+        <button type="button" class="sec" id="btnGenerarBarras">Generar</button>
+      </div>
+
+      <label for="ref">Referencia</label>
+      <input id="ref" maxlength="50" placeholder="Ej: Vf2944">
+
+      <label for="nombre">Descripción</label>
+      <input id="nombre" maxlength="70" placeholder="Ej: Body">
+      <p class="ayuda">En la factura sale como: descripción + referencia (Body Vf2944).</p>
+
+      <label for="grupo_sel">Grupo</label>
+      <select id="grupo_sel">
+        <option value="Confecciones" selected>Confecciones</option>
+        <option value="Otro">Otro…</option>
+      </select>
+      <input id="grupo_otro" placeholder="Escribe el grupo" hidden style="margin-top:6px">
+
+      <div class="fila">
+        <div>
+          <label class="req" for="impuesto">Tipo de impuesto</label>
+          <select id="impuesto" required>
+            <option value="IVA 19%" selected>IVA 19% (general)</option>
+            <option value="IVA 5%">IVA 5%</option>
+            <option value="Exento">Exento (tarifa 0%)</option>
+            <option value="Excluido">Excluido (sin IVA)</option>
+            <option value="No gravado">No gravado (sin IVA)</option>
+          </select>
+        </div>
+        <div>
+          <label class="req" for="unidad">Unidad de medida</label>
+          <select id="unidad" required>
+            <option value="Unidad" selected>Unidad</option>
+            <option value="Par">Par</option>
+            <option value="Docena">Docena</option>
+            <option value="Metro">Metro</option>
+            <option value="Kilogramo">Kilogramo</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="fila">
+        <div>
+          <label for="costo">Costo de compra (sin IVA)</label>
+          <input id="costo" type="number" min="0" step="any">
+        </div>
+        <div>
+          <label for="inc">INC (%)</label>
+          <input id="inc" type="number" min="0" step="any" value="0">
+        </div>
+      </div>
+
+      <div class="fila">
+        <div>
+          <label for="ganancia">Ganancia sobre el costo (%)</label>
+          <input id="ganancia" type="number" min="0" step="any" value="30">
+        </div>
+        <div>
+          <label for="redondeo">Redondeo del precio</label>
+          <select id="redondeo">
+            <option value="900" selected>Terminar en 900</option>
+            <option value="100">A la centena (hacia arriba)</option>
+            <option value="1000">Al mil (hacia arriba)</option>
+            <option value="0">Sin redondeo</option>
+          </select>
+        </div>
+      </div>
+      <div class="desglose" id="sugeridoBox">
+        <span id="sugeridoTxt"></span>
+        <button type="button" class="mini" id="btnCalcPrecio" hidden>Usar este precio</button>
+      </div>
+
+      <div class="fila">
+        <div>
+          <label class="req" for="precio_detal">Precio detal (con IVA)</label>
+          <input id="precio_detal" type="number" min="0" step="any">
+        </div>
+        <div>
+          <label for="precio_mayorista">Precio mayorista (con IVA)</label>
+          <input id="precio_mayorista" type="number" min="0" step="any">
+        </div>
+      </div>
+
+      <div class="desglose" id="desglose"></div>
+
+      <div class="botones">
+        <button type="submit">Guardar producto</button>
+        <button type="button" class="sec" id="btnLimpiar">Limpiar</button>
+        <button type="button" class="sec" id="btnImprimirForm">Imprimir con BarTender</button>
+      </div>
+      <div class="msg" id="msgForm"></div>
+    </form>
+
+    <details>
+      <summary>Reglas DIAN que aplica esta herramienta</summary>
+      <ul class="ayuda">
+        <li><b>Precio con IVA:</b> el precio de venta se ingresa con impuestos incluidos. La base gravable se calcula como precio ÷ (1 + IVA + INC), y el IVA es base × tarifa.</li>
+        <li><b>Tarifas:</b> IVA general 19% (prendas de vestir, por defecto). IVA 5% solo si el producto está en una tarifa diferencial. Exento y excluido/no gravado van sin IVA; cada una tiene requisitos distintos (exento: tarifa 0% con derecho a descontar; excluido y no gravado: sin IVA y sin descuento).</li>
+        <li><b>INC:</b> las prendas normalmente no lo llevan. La herramienta avisa si lo ingresas.</li>
+        <li><b>Unidad de medida:</b> obligatoria en la factura electrónica. Por defecto, Unidad.</li>
+        <li><b>Código de barras:</b> se revisa que tenga 6 dígitos (código propio) o, si es de un fabricante, 8, 12, 13 o 14 dígitos con dígito verificador correcto.</li>
+        <li><b>Nombre:</b> se imprime tal cual en la factura electrónica. Evita abreviaturas.</li>
+        <li><b>Referencias normativas a verificar:</b> Estatuto Tributario arts. 468 (19%), 468-1 (5%), 477 (exentos), 424 (excluidos); facturación electrónica Resolución DIAN 000042 de 2020 y su anexo técnico vigente.</li>
+      </ul>
+      <p class="ayuda">Esta herramienta ayuda a no cometer errores de captura, pero no reemplaza la asesoría de un contador. Confirma con tu contador el tipo de impuesto de cada referencia antes de facturar.</p>
+    </details>
+
+    <details>
+      <summary>Código de barras propio</summary>
+      <label class="check"><input type="checkbox" id="bc_auto" checked> Generar automáticamente al guardar si lo dejo vacío</label>
+      <!-- Siempre códigos cortos de 6 dígitos (como CRS). Campos ocultos que el código aún lee. -->
+      <select id="bc_formato" hidden><option value="corto" selected>corto</option></select>
+      <div id="bc_bloquePrefijo" hidden><input id="bc_prefijo" value="20" maxlength="2" inputmode="numeric"></div>
+      <p class="ayuda" id="bc_info"></p>
+      <label for="bc_ultimo">Seguir después del número (si ya usaste una serie)</label>
+      <div class="fila-barras">
+        <input id="bc_ultimo" type="number" min="0" step="1" placeholder="0">
+        <button type="button" class="sec" id="btnAplicarUltimo">Aplicar</button>
+      </div>
+      <label>Códigos que ya existen en CRS o Siigo</label>
+      <button type="button" class="sec" id="btnCargarReservados">Cargar códigos existentes (CSV o TXT)…</button>
+      <input type="file" id="archivoReservados" accept=".csv,.txt" hidden>
+      <p class="ayuda">
+        Los códigos generados son de <b>6 dígitos</b> con ceros adelante (007754, 007755…), como los de CRS.
+        En «Seguir después del número» pon el último código que usaste en CRS para no repetir.
+        El consecutivo nunca baja ni se repite, aunque borres el producto (su código queda reservado).
+        El último código usado se guarda en la base y también en <b>configuracion\opciones.json</b>.
+      </p>
+    </details>
+
+    <details>
+      <summary>Configuración de BarTender</summary>
+      <label for="bt_exe">Ruta de bartend.exe</label>
+      <div class="fila-barras">
+        <input id="bt_exe" value="C:\Program Files\Seagull\BarTender Suite\bartend.exe">
+        <button type="button" class="sec" id="btnBuscarExe">Buscar…</button>
+      </div>
+      <label for="bt_tpl">Plantilla de etiqueta (.btw)</label>
+      <div class="fila-barras">
+        <input id="bt_tpl" placeholder="C:\Etiquetas\etiqueta_ropa.btw">
+        <button type="button" class="sec" id="btnBuscarBtw">Buscar…</button>
+      </div>
+      <div class="fila">
+        <div>
+          <label for="bt_printer">Impresora</label>
+          <input id="bt_printer" list="listaImpresoras" placeholder="Elige o escribe la impresora">
+          <datalist id="listaImpresoras"></datalist>
+        </div>
+        <div>
+          <label for="bt_copias">Copias</label>
+          <input id="bt_copias" type="number" min="1" value="1">
+        </div>
+      </div>
+      <label for="bt_args">Parámetros de línea de comandos</label>
+      <input id="bt_args">
+      <div class="botones">
+        <button type="button" class="sec mini" id="btnGuardarBt">Guardar configuración</button>
+        <button type="button" class="sec mini" id="btnCarpetaEtiquetas">Abrir carpeta del CSV</button>
+      </div>
+      <p class="ayuda">
+        Al imprimir, la app escribe los datos en <b id="bt_csv">datos\etiquetas\etiquetas.csv</b> (siempre el mismo archivo)
+        y ejecuta BarTender. En la plantilla .btw, enlaza la base de datos a ese CSV y los campos a sus columnas:
+        <b>referencia, nombre, codigo_barras, precio_detal, grupo, impuesto</b>.
+        En los parámetros, {plantilla}, {datos}, {impresora} y {copias} se reemplazan solos.
+        Sin verificar: confirma las opciones con <b>bartend /?</b> en tu versión de BarTender.
+      </p>
+    </details>
+
+    <details>
+      <summary>Base de datos y copias de seguridad</summary>
+      <p class="ayuda">Cada cambio se guarda solo en el disco. Al abrir la app y cada hora de trabajo se hace una copia con fecha (se conservan las últimas 60).</p>
+      <label for="cfg_ruta">Archivo de la base (.sqlite)</label>
+      <input id="cfg_ruta" placeholder="Vacío = datos\productos.sqlite dentro de la carpeta">
+      <p class="ayuda" id="info_base"></p>
+      <div class="botones">
+        <button type="button" class="sec mini" id="btnCambiarRuta">Cambiar ubicación</button>
+        <button type="button" class="sec mini" id="btnCopiaAhora">Hacer copia ahora</button>
+        <button type="button" class="sec mini" id="btnCarpetaCopias">Abrir carpeta de copias</button>
+        <button type="button" class="sec mini" id="btnCarpetaConfig">Abrir carpeta de configuración</button>
+      </div>
+      <p class="ayuda">Las opciones (BarTender, impresoras usadas, últimas carpetas, ubicación de la base, columnas de Siigo) se guardan en <b>configuracion\opciones.json</b>.</p>
+      <div class="botones">
+        <button type="button" class="sec mini" id="btnSalir">Cerrar el programa</button>
+      </div>
+    </details>
+  </section>
+
+  <div class="columna">
+  <section class="card">
+    <h2>Productos <span class="contador" id="contador"></span></h2>
+    <div class="toolbar">
+      <input id="buscar" placeholder="Buscar por referencia, código de barras o nombre…">
+    </div>
+    <div class="tabla-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Referencia</th><th>Barras</th><th>Nombre</th><th>Grupo</th><th>Unidad</th>
+            <th>Impuesto</th><th class="num">Costo</th><th class="num">Detal</th>
+            <th class="num">Base detal</th><th class="num">IVA detal</th>
+            <th class="num">Mayor.</th><th class="num">INC %</th><th>Siigo</th><th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="cuerpo"></tbody>
+      </table>
+    </div>
+    <div class="msg" id="msgLista"></div>
+  </section>
+
+  <section class="card" id="siigoCard">
+    <h2>Excel para Siigo</h2>
+    <p class="ayuda" id="siigoPlantilla">Buscando plantilla…</p>
+    <div class="botones">
+      <button type="button" class="sec mini" id="btnCargarPlantilla">Cargar plantilla de Siigo (.xlsx)…</button>
+      <input type="file" id="archivoPlantilla" accept=".xlsx" hidden>
+      <button type="button" class="sec mini" id="btnCarpetaPlantillas">Abrir carpeta de plantillas</button>
+    </div>
+    <p class="ayuda">
+      Descárgala en Siigo: Configuración → Productos y servicios → Importación → Productos y Servicios → Crear plantilla.
+      La app solo escribe valores en las filas de datos: no cambia columnas, fórmulas ni formato. Máximo 500 productos por archivo
+      (si hay más, se parten en lotes). Los grupos de inventario deben existir ya en Siigo. Los combos no se importan.
+    </p>
+    <details id="siigoColsBox">
+      <summary>Columnas de la plantilla (qué dato va en cada una)</summary>
+      <p class="ayuda" id="siigoDeteccion"></p>
+      <div class="tabla-wrap" style="max-height:50vh">
+        <table class="siigo-cols">
+          <thead><tr><th>Columna</th><th>Obligatoria</th><th>Dato de la app</th><th>Valor fijo</th><th>Equivalencias (app = Siigo)</th></tr></thead>
+          <tbody id="siigoCols"></tbody>
+        </table>
+      </div>
+      <div class="botones"><button type="button" class="mini" id="btnGuardarCols">Guardar columnas</button></div>
+    </details>
+    <label class="check"><input type="checkbox" id="siigoSoloNuevos" checked> Solo productos que aún no se han exportado</label>
+    <div class="botones">
+      <button type="button" class="sec" id="btnValidarSiigo">Revisar productos</button>
+      <button type="button" id="btnExportarSiigo">Exportar a Excel</button>
+      <button type="button" class="sec" id="btnCarpetaExportados">Abrir carpeta de exportados</button>
+    </div>
+    <div class="informe" id="siigoInforme"></div>
+  </section>
+  </div>
+</main>
+
+<script src="vendor/sql-wasm.js"></script>
+<script>
+(async function () {
+  const $ = id => document.getElementById(id);
+
+  let SQL;
+  try {
+    SQL = await initSqlJs({ locateFile: f => `vendor/${f}` });
+  } catch (err) {
+    document.querySelector("main").innerHTML =
+      "<p style='padding:20px;color:#dc2626'>No se pudo cargar el motor de base de datos (sql.js). Cierra y vuelve a abrir el programa.</p>";
+    return;
+  }
+
+  let db = null;
+  let cambios = false; // hay cambios que todavía no llegaron al disco
+
+  // ---------- servidor local y guardado automático ----------
+  let TOKEN = document.querySelector('meta[name="token"]').content;
+  let versionBase = null;
+  let guardando = Promise.resolve();
+  let pendiente = false;
+  let bloqueado = null; // conflicto con otra ventana: no se sigue guardando hasta recargar
+
+  // La clave cambia cada vez que arranca el programa. Si se reinició con la pestaña abierta,
+  // se pide la clave nueva a la página y se repite la operación (sin recargar).
+  async function renovarToken() {
+    const h = await (await fetch(location.pathname, { cache: "no-store" })).text();
+    const m = h.match(/<meta name="token" content="([0-9a-f]+)">/);
+    if (!m) throw new Error("No se pudo renovar la sesión. Recarga la página (F5).");
+    TOKEN = m[1];
+  }
+  async function api(ruta, opciones = {}, reintento) {
+    const r = await fetch(ruta, { ...opciones, headers: { "X-Token": TOKEN, ...(opciones.headers || {}) } });
+    if (r.status === 403 && !reintento) { await renovarToken(); return api(ruta, opciones, true); }
+    const tipo = r.headers.get("Content-Type") || "";
+    const datos = tipo.includes("json") ? await r.json() : await r.arrayBuffer();
+    if (!r.ok) throw new Error((datos && datos.error) || `Error ${r.status}`);
+    return { datos, r };
+  }
+  // Abre la ventana de Windows para elegir un archivo; empieza en la última carpeta usada para ese tipo
+  // (queda guardada en configuracion\opciones.json). Devuelve { ruta, nombre } o null si se canceló.
+  // Si la ventana de Windows no se puede abrir, usa el selector del navegador (inputRespaldo).
+  // lanzarErrores: los errores del archivo elegido (p. ej. plantilla dañada) se lanzan en vez de abrir el respaldo.
+  async function elegirArchivo(tipo, inputRespaldo, lanzarErrores) {
+    let r;
+    try {
+      r = await api("/api/elegir", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tipo }) });
+    } catch (err) {
+      if (/Ya hay una ventana/.test(err.message)) { alert(err.message); return null; }
+      if (!/ventana de Windows/.test(err.message) && lanzarErrores) throw err;
+      if (inputRespaldo) inputRespaldo.click();
+      return null;
+    }
+    return r.datos.cancelado ? null : r.datos;
+  }
+  async function bytesElegido(tipo) { return new Uint8Array((await api(`/api/elegido?tipo=${tipo}`)).datos); }
+  async function apiJson(ruta, metodo, cuerpo) {
+    return (await api(ruta, { method: metodo, headers: { "Content-Type": "application/json" }, body: JSON.stringify(cuerpo) })).datos;
+  }
+
+  function estadoGuardado(texto, error) {
+    $("estadoGuardado").textContent = texto;
+    $("estadoGuardado").className = "estado" + (error ? " error" : "");
+  }
+  function hora() { return new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" }); }
+
+  // Cada cambio en la base se manda al disco. Varias llamadas seguidas se juntan en un solo guardado.
+  function guardarEnDisco(reemplazo) {
+    if (bloqueado) { estadoGuardado("Sin guardar: recarga (F5)", true); return guardando; }
+    pendiente = true;
+    estadoGuardado("Guardando…");
+    guardando = guardando.then(async () => {
+      if (!pendiente && !reemplazo) return;
+      pendiente = false;
+      const bytes = db.export();
+      try {
+        const { datos } = await api(`/api/base?version=${encodeURIComponent(versionBase)}${reemplazo ? "&reemplazo=1" : ""}`, {
+          method: "PUT", headers: { "Content-Type": "application/octet-stream" }, body: bytes
+        });
+        versionBase = datos.version;
+        cambios = pendiente;
+        if (!pendiente) estadoGuardado(`Guardado ${hora()}`);
+      } catch (err) {
+        if (/Recarga/.test(err.message)) bloqueado = err.message;
+        estadoGuardado("No se guardó (clic para reintentar)", true);
+        mensaje($("msgLista"), "No se pudo guardar en el disco: " + err.message, "error");
+      }
+    });
+    return guardando;
+  }
+  function marcarCambio() { cambios = true; guardarEnDisco(); }
+
+  // ---------- sesión de impresión (pestaña IMPRIMIR) ----------
+  // Avisa a la pestaña de impresión cuando cambian los productos o el historial
+  const canal = "BroadcastChannel" in window ? new BroadcastChannel("alta-productos") : { postMessage() {} };
+  function agregarASesion(d) {
+    const producto = { referencia: d.codigo_interno, nombre: d.nombre, codigo_barras: d.codigo_barras,
+                       precio_detal: d.precio_detal, precio_mayorista: d.precio_mayorista, grupo: d.grupo, impuesto: d.impuesto };
+    apiJson("/api/sesion/producto", "POST", { producto }).then(() => canal.postMessage("sesion")).catch(() => {});
+  }
+  $("btnImprimir").addEventListener("click", () => window.open("imprimir.html", "alta-imprimir"));
+  // Ctrl+F7: reinicia la sesión de impresión (productos de la sesión e historial) y empieza de cero
+  document.addEventListener("keydown", async e => {
+    if (!(e.ctrlKey && e.key === "F7")) return;
+    e.preventDefault();
+    if (!confirm("¿Reiniciar la sesión?\n\nSe borran la lista de productos de esta sesión y el historial de impresión.\nLos productos guardados no se tocan y el log de impresiones se conserva.")) return;
+    try {
+      await apiJson("/api/sesion/reiniciar", "POST", {});
+      canal.postMessage("sesion");
+      mensaje($("msgLista"), "Sesión reiniciada: la pestaña Imprimir empieza de cero.", "ok");
+    } catch (err) { mensaje($("msgLista"), "No se pudo reiniciar la sesión: " + err.message, "error"); }
+  });
+  // Latido: mientras haya una pestaña abierta, el programa sigue abierto
+  setInterval(() => { api("/api/latido", { method: "POST" }).catch(() => {}); }, 30000);
+  $("estadoGuardado").addEventListener("click", () => { if (cambios) guardarEnDisco(); });
+
+  // La columna se llama codigo_interno para que las bases ya guardadas sigan funcionando.
+  // En pantalla y en exportaciones se muestra como "Referencia".
+  const ESQUEMA = `
+    CREATE TABLE IF NOT EXISTS productos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      codigo_interno TEXT NOT NULL UNIQUE,
+      codigo_barras TEXT,
+      nombre TEXT NOT NULL,
+      grupo TEXT,
+      costo REAL,
+      precio_detal REAL,
+      precio_mayorista REAL,
+      impuesto TEXT NOT NULL,
+      inc REAL DEFAULT 0,
+      creado TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_barras ON productos(codigo_barras);
+    CREATE TABLE IF NOT EXISTS barras_reservadas (
+      codigo TEXT PRIMARY KEY,
+      origen TEXT,
+      creado TEXT
+    );
+    CREATE TABLE IF NOT EXISTS contador_barras (
+      prefijo TEXT PRIMARY KEY,
+      ultimo INTEGER NOT NULL
+    );
+  `;
+
+  const GRUPO_DEFECTO = "Confecciones";
+
+  // Tarifa de IVA que se aplica a la base para cada tipo de impuesto
+  const TARIFA_IVA = {
+    "IVA 19%": 0.19,
+    "IVA 5%": 0.05,
+    "Exento": 0,
+    "Excluido": 0,
+    "No gravado": 0
+  };
+
+  // ---------- utilidades ----------
+  function mensaje(el, texto, tipo) {
+    el.textContent = texto;
+    el.className = "msg " + (tipo || "");
+  }
+  function numOrNull(v) {
+    if (v === "" || v === null || v === undefined) return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  }
+  function txtOrNull(v) {
+    const t = (v || "").trim();
+    return t === "" ? null : t;
+  }
+  function redondear(n) { return Math.round(n * 100) / 100; }
+  function pesos(n) {
+    if (n === null || n === undefined || n === "") return "";
+    return Number(n).toLocaleString("es-CO", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  }
+  function csvEsc(v, sep) {
+    if (v === null || v === undefined) return "";
+    const s = String(v);
+    return (s.includes(sep) || /["\n\r]/.test(s)) ? `"${s.replace(/"/g, '""')}"` : s;
+  }
+  function descargar(nombre, contenido, tipo) {
+    const blob = new Blob([contenido], { type: tipo });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = nombre;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  // Dígito verificador GS1 (EAN-8, UPC-A, EAN-13, GTIN-14)
+  function gtinValido(codigo) {
+    if (!/^\d{8}$|^\d{12}$|^\d{13}$|^\d{14}$/.test(codigo)) return false;
+    const digitos = codigo.split("").map(Number);
+    const verificador = digitos.pop();
+    let suma = 0;
+    digitos.reverse().forEach((d, i) => { suma += d * (i % 2 === 0 ? 3 : 1); });
+    return (10 - (suma % 10)) % 10 === verificador;
+  }
+
+  // ---------- código de barras propio ----------
+  const BARRAS_KEY = "altaProductos.barras";
+  // formato "corto" (6 dígitos, como CRS) o "ean13". El contador del formato corto se guarda con la clave "CORTO".
+  const LARGO_CORTO = 6;
+  function leerCfgBarras() {
+    let pref = ($("bc_prefijo").value || "20").replace(/\D/g, "").slice(0, 2);
+    if (!/^2\d$/.test(pref)) pref = "20";
+    const formato = "corto"; // los códigos largos (EAN-13 con prefijo 20…) ya no se generan
+    return { prefijo: pref, auto: $("bc_auto").checked, formato, clave: formato === "corto" ? "CORTO" : pref };
+  }
+  function mostrarFormatoBarras() { $("bc_bloquePrefijo").hidden = true; }
+  function cargarCfgBarras() {
+    try {
+      const c = JSON.parse(localStorage.getItem(BARRAS_KEY) || "{}");
+      if (c.prefijo) $("bc_prefijo").value = c.prefijo;
+      if (c.auto === false) $("bc_auto").checked = false;
+    } catch (e) { /* sin almacenamiento: valores por defecto */ }
+    mostrarFormatoBarras();
+  }
+  function guardarCfgBarras() {
+    const { prefijo, auto, formato } = leerCfgBarras();
+    try { localStorage.setItem(BARRAS_KEY, JSON.stringify({ prefijo, auto, formato })); } catch (e) { /* ignorar */ }
+  }
+  ["bc_prefijo", "bc_auto", "bc_formato"].forEach(id => $(id).addEventListener("change", guardarCfgBarras));
+  $("bc_formato").addEventListener("change", () => { mostrarFormatoBarras(); actualizarInfoBarras(); });
+
+  function digitoVerificador(base12) {
+    let suma = 0;
+    base12.split("").reverse().forEach((c, i) => { suma += Number(c) * (i % 2 === 0 ? 3 : 1); });
+    return String((10 - (suma % 10)) % 10);
+  }
+
+  // Dónde está ya registrado un código de barras (texto), o null si está libre
+  function barrasEnUso(codigo) {
+    let st = db.prepare("SELECT codigo_interno FROM productos WHERE codigo_barras = ? LIMIT 1");
+    st.bind([codigo]);
+    const ref = st.step() ? st.getAsObject().codigo_interno : null;
+    st.free();
+    if (ref) return `la referencia ${ref}`;
+
+    st = db.prepare("SELECT origen FROM barras_reservadas WHERE codigo = ? LIMIT 1");
+    st.bind([codigo]);
+    const reservado = st.step() ? st.getAsObject().origen : null;
+    st.free();
+    if (reservado !== null) {
+      return reservado === "eliminado"
+        ? "un producto eliminado (el código queda reservado)"
+        : "los códigos reservados (ya existían en CRS o Siigo)";
+    }
+    return null;
+  }
+
+  function maximoConsecutivo(sql, prefijo) {
+    const st = db.prepare(sql);
+    st.bind([prefijo]);
+    const m = st.step() ? (st.getAsObject().m || 0) : 0;
+    st.free();
+    return m;
+  }
+
+  // El consecutivo nunca baja: toma el mayor número visto en productos, en códigos reservados
+  // y en el contador guardado en la base (que sigue subiendo aunque se borren productos).
+  function siguienteBarras() {
+    const { prefijo, formato, clave } = leerCfgBarras();
+    if (formato === "corto") {
+      // Mayor código corto en productos y en el contador. Los reservados no suben el consecutivo
+      // (un archivo importado puede traer precios de 6 cifras), solo se saltan si coinciden.
+      const patron = "[0-9]".repeat(LARGO_CORTO);
+      const enProductos = maximoConsecutivo(
+        `SELECT MAX(CAST(codigo_barras AS INTEGER)) AS m FROM productos WHERE codigo_barras GLOB ?`, patron);
+      const enContador = maximoConsecutivo("SELECT ultimo AS m FROM contador_barras WHERE prefijo = ?", clave);
+      let n = Math.max(enProductos, enContador) + 1;
+      let codigo;
+      for (;;) {
+        codigo = String(n).padStart(LARGO_CORTO, "0");
+        if (!barrasEnUso(codigo)) break;
+        n++;
+      }
+      db.run(
+        "INSERT INTO contador_barras (prefijo, ultimo) VALUES (?, ?) " +
+        "ON CONFLICT(prefijo) DO UPDATE SET ultimo = MAX(ultimo, excluded.ultimo)", [clave, n]);
+      marcarCambio();
+      actualizarInfoBarras();
+      recordarUltimoBarras(n);
+      return codigo;
+    }
+    const enProductos = maximoConsecutivo(
+      `SELECT MAX(CAST(SUBSTR(codigo_barras, 3, 10) AS INTEGER)) AS m
+       FROM productos WHERE LENGTH(codigo_barras) = 13 AND SUBSTR(codigo_barras, 1, 2) = ?`, prefijo);
+    const enReservados = maximoConsecutivo(
+      `SELECT MAX(CAST(SUBSTR(codigo, 3, 10) AS INTEGER)) AS m
+       FROM barras_reservadas WHERE LENGTH(codigo) = 13 AND SUBSTR(codigo, 1, 2) = ?`, prefijo);
+    const enContador = maximoConsecutivo(
+      "SELECT ultimo AS m FROM contador_barras WHERE prefijo = ?", prefijo);
+
+    let n = Math.max(enProductos, enReservados, enContador) + 1;
+    let codigo;
+    for (;;) {
+      const base = prefijo + String(n).padStart(10, "0");
+      codigo = base + digitoVerificador(base);
+      if (!barrasEnUso(codigo)) break;
+      n++;
+    }
+    db.run(
+      "INSERT INTO contador_barras (prefijo, ultimo) VALUES (?, ?) " +
+      "ON CONFLICT(prefijo) DO UPDATE SET ultimo = MAX(ultimo, excluded.ultimo)", [prefijo, n]);
+    marcarCambio();
+    actualizarInfoBarras();
+    return codigo;
+  }
+
+  // Guarda el último código corto usado también en configuracion\opciones.json (respaldo fuera de la base)
+  function recordarUltimoBarras(codigoOn, forzar) {
+    const n = typeof codigoOn === "number" ? codigoOn : (/^\d{6}$/.test(codigoOn || "") ? parseInt(codigoOn, 10) : null);
+    if (n === null || n < 0) return;
+    apiJson("/api/config", "PUT", { barras: { ultimoCorto: n, forzar: !!forzar } })
+      .then(r => { configSrv = r.config; actualizarInfoBarras(); }).catch(() => {});
+  }
+  // Al abrir: el contador de la base nunca queda por debajo del último código guardado en opciones.json
+  function sincronizarUltimoBarras() {
+    const n = configSrv && configSrv.barras ? Math.floor(Number(configSrv.barras.ultimoCorto) || 0) : 0;
+    const enBase = maximoConsecutivo("SELECT ultimo AS m FROM contador_barras WHERE prefijo = ?", "CORTO");
+    if (n > enBase) {
+      db.run("INSERT INTO contador_barras (prefijo, ultimo) VALUES ('CORTO', ?) " +
+             "ON CONFLICT(prefijo) DO UPDATE SET ultimo = MAX(ultimo, excluded.ultimo)", [n]);
+      marcarCambio();
+    } else if (enBase > n) recordarUltimoBarras(enBase);
+  }
+  function actualizarInfoBarras() {
+    const { prefijo, formato, clave } = leerCfgBarras();
+    let ultimo = 0, reservados = 0;
+    try {
+      ultimo = maximoConsecutivo("SELECT ultimo AS m FROM contador_barras WHERE prefijo = ?", clave);
+      reservados = db.exec("SELECT COUNT(*) FROM barras_reservadas")[0].values[0][0];
+    } catch (e) { /* base aún sin cargar */ }
+    const guardado = configSrv && configSrv.barras && configSrv.barras.ultimoCodigo;
+    $("bc_info").textContent = formato === "corto"
+      ? `Último código corto usado: ${String(ultimo).padStart(LARGO_CORTO, "0")}. El siguiente será ${String(ultimo + 1).padStart(LARGO_CORTO, "0")} (o el que siga libre). ` +
+        (guardado ? `Respaldo en configuracion\\opciones.json: ${guardado}. ` : "") + `Códigos reservados: ${reservados}.`
+      : `Último número usado con el prefijo ${prefijo}: ${ultimo}. Códigos reservados: ${reservados}.`;
+  }
+  $("bc_prefijo").addEventListener("change", actualizarInfoBarras);
+
+  // Fija desde qué número seguir (solo puede subir)
+  $("btnAplicarUltimo").addEventListener("click", () => {
+    const n = Math.floor(numOrNull($("bc_ultimo").value) ?? -1);
+    if (n < 0) { mensaje($("msgForm"), "Escribe un número igual o mayor que 0.", "error"); return; }
+    const clave = leerCfgBarras().clave;
+    const actual = maximoConsecutivo("SELECT ultimo AS m FROM contador_barras WHERE prefijo = ?", clave);
+    // Se puede corregir hacia abajo (por ejemplo, si se digitó mal), pidiendo confirmación.
+    // Nunca se repite un código: el siguiente siempre salta los que ya tienen producto o están reservados.
+    if (n < actual && !confirm(`El contador está en ${String(actual).padStart(LARGO_CORTO, "0")}. ¿Bajarlo a ${String(n).padStart(LARGO_CORTO, "0")}?\n\n` +
+        "Hazlo solo si el número actual está mal. Los códigos que ya tienen producto no se repiten.")) return;
+    db.run(
+      "INSERT INTO contador_barras (prefijo, ultimo) VALUES (?, ?) " +
+      "ON CONFLICT(prefijo) DO UPDATE SET ultimo = excluded.ultimo", [clave, n]);
+    recordarUltimoBarras(n, true);
+    marcarCambio();
+    actualizarInfoBarras();
+    mensaje($("msgForm"), `El consecutivo seguirá después del ${String(n).padStart(LARGO_CORTO, "0")} (o del código más alto que ya tenga un producto).`, "ok");
+  });
+
+  // Códigos que ya existen en CRS o Siigo: no se generan ni se aceptan
+  $("btnCargarReservados").addEventListener("click", async () => {
+    const r = await elegirArchivo("codigos", $("archivoReservados"));
+    if (r) cargarReservados(r.nombre, new TextDecoder().decode(await bytesElegido("codigos")));
+  });
+  $("archivoReservados").addEventListener("change", async e => {
+    const f = e.target.files[0];
+    e.target.value = "";
+    if (f) cargarReservados(f.name, await f.text());
+  });
+  function cargarReservados(nombreArchivo, texto) {
+    const f = { name: nombreArchivo };
+    try {
+      const codigos = new Set(texto.match(/(?<!\d)(?:\d{6}|\d{8,14})(?!\d)/g) || []);
+      const ahora = new Date().toISOString();
+      let nuevos = 0;
+      db.run("BEGIN");
+      codigos.forEach(c => {
+        db.run("INSERT OR IGNORE INTO barras_reservadas (codigo, origen, creado) VALUES (?, 'importado', ?)", [c, ahora]);
+        nuevos += db.getRowsModified();
+      });
+      db.run("COMMIT");
+      marcarCambio();
+      actualizarInfoBarras();
+      mensaje($("msgForm"), `Se reservaron ${nuevos} códigos nuevos de ${codigos.size} encontrados en ${f.name}.`, nuevos ? "ok" : "warn");
+    } catch (err) {
+      try { db.run("ROLLBACK"); } catch (e2) { /* sin transacción */ }
+      mensaje($("msgForm"), "No se pudo leer el archivo: " + err.message, "error");
+    }
+  }
+
+  $("btnGenerarBarras").addEventListener("click", () => {
+    $("barras").value = siguienteBarras();
+    mensaje($("msgForm"), `Código generado: ${$("barras").value}. Se guarda con el producto.`, "ok");
+  });
+
+  // Desglose de un precio que incluye IVA (y, si aplica, INC)
+  function desglose(precioConImpuestos, impuesto, incPct) {
+    if (precioConImpuestos === null || precioConImpuestos === undefined) return null;
+    const tIva = TARIFA_IVA[impuesto] ?? 0;
+    const tInc = (incPct || 0) / 100;
+    const base = precioConImpuestos / (1 + tIva + tInc);
+    return {
+      base: redondear(base),
+      iva: redondear(base * tIva),
+      inc: redondear(base * tInc),
+      total: precioConImpuestos
+    };
+  }
+
+  // ---------- precio a partir del costo ----------
+  const PRECIO_KEY = "altaProductos.precio";
+  function redondearPrecio(x, modo) {
+    x = Math.round(x * 100) / 100; // evita errores de coma flotante en el límite
+    if (modo === "900") return Math.ceil((x - 900) / 1000) * 1000 + 900;
+    if (modo === "100") return Math.ceil(x / 100) * 100;
+    if (modo === "1000") return Math.ceil(x / 1000) * 1000;
+    return Math.round(x);
+  }
+  // costo sin IVA x (1 + ganancia) x (1 + IVA + INC), luego redondeo
+  function calcularPrecio(d, gananciaPct, modo) {
+    if (d.costo === null || d.costo <= 0) return null;
+    const tIva = TARIFA_IVA[d.impuesto] ?? 0;
+    const tInc = (d.inc || 0) / 100;
+    const exacto = d.costo * (1 + gananciaPct / 100) * (1 + tIva + tInc);
+    return { exacto: redondear(exacto), final: redondearPrecio(exacto, modo) };
+  }
+  function actualizarSugerido() {
+    const d = leerForm();
+    const gan = numOrNull($("ganancia").value) ?? 0;
+    const r = calcularPrecio(d, gan, $("redondeo").value);
+    if (!r) {
+      $("sugeridoTxt").textContent = "Ingresa el costo para calcular el precio con la ganancia.";
+      $("btnCalcPrecio").hidden = true;
+      return;
+    }
+    $("sugeridoTxt").textContent =
+      `Costo $${pesos(d.costo)} + ${gan}% de ganancia + IVA = $${pesos(r.exacto)}` +
+      (r.final !== r.exacto ? ` → redondeado a $${pesos(r.final)}` : "");
+    $("btnCalcPrecio").hidden = false;
+  }
+  function guardarCfgPrecio() {
+    try {
+      localStorage.setItem(PRECIO_KEY, JSON.stringify({ ganancia: $("ganancia").value, redondeo: $("redondeo").value }));
+    } catch (e) { /* ignorar */ }
+  }
+  function cargarCfgPrecio() {
+    try {
+      const c = JSON.parse(localStorage.getItem(PRECIO_KEY) || "{}");
+      if (c.ganancia !== undefined && c.ganancia !== "") $("ganancia").value = c.ganancia;
+      if (c.redondeo) $("redondeo").value = c.redondeo;
+    } catch (e) { /* valores por defecto */ }
+  }
+  ["costo", "ganancia", "redondeo", "inc", "impuesto"].forEach(id => {
+    $(id).addEventListener("input", actualizarSugerido);
+    $(id).addEventListener("change", actualizarSugerido);
+  });
+  ["ganancia", "redondeo"].forEach(id => $(id).addEventListener("change", guardarCfgPrecio));
+  $("btnCalcPrecio").addEventListener("click", () => {
+    const d = leerForm();
+    const r = calcularPrecio(d, numOrNull($("ganancia").value) ?? 0, $("redondeo").value);
+    if (!r) return;
+    $("precio_detal").value = r.final;
+    actualizarDesglose();
+  });
+
+  function actualizarDesglose() {
+    const d = leerForm();
+    const box = $("desglose");
+    if (d.precio_detal === null) {
+      box.innerHTML = "Ingresa el precio detal para ver el desglose de IVA.";
+      return;
+    }
+    const x = desglose(d.precio_detal, d.impuesto, d.inc);
+    box.innerHTML =
+      `Base gravable: <b>$${pesos(x.base)}</b><br>` +
+      `IVA (${d.impuesto.startsWith("IVA") ? d.impuesto.replace("IVA ", "") : "0%"}): <b>$${pesos(x.iva)}</b><br>` +
+      (x.inc ? `INC: <b>$${pesos(x.inc)}</b><br>` : "") +
+      `Precio al público: <b>$${pesos(x.total)}</b>`;
+  }
+
+  // ---------- grupo ----------
+  function getGrupo() {
+    if ($("grupo_sel").value === "Otro") return txtOrNull($("grupo_otro").value);
+    return $("grupo_sel").value;
+  }
+  function setGrupo(valor) {
+    if (!valor || valor === GRUPO_DEFECTO) {
+      $("grupo_sel").value = GRUPO_DEFECTO;
+      $("grupo_otro").value = "";
+    } else {
+      $("grupo_sel").value = "Otro";
+      $("grupo_otro").value = valor;
+    }
+    actualizarGrupoOtro();
+  }
+  function actualizarGrupoOtro() {
+    $("grupo_otro").hidden = $("grupo_sel").value !== "Otro";
+  }
+  $("grupo_sel").addEventListener("change", () => {
+    actualizarGrupoOtro();
+    if ($("grupo_sel").value === "Otro") $("grupo_otro").focus();
+  });
+
+  // ---------- formulario ----------
+  function leerForm() {
+    return {
+      // En la base el código de barras es también la referencia (codigo_interno),
+      // y el nombre se guarda como "Descripción Referencia"
+      codigo_interno: txtOrNull($("barras").value),
+      codigo_barras: txtOrNull($("barras").value),
+      nombre: txtOrNull([$("nombre").value.trim(), $("ref").value.trim()].filter(Boolean).join(" ")),
+      grupo: getGrupo(),
+      unidad: $("unidad").value,
+      costo: numOrNull($("costo").value),
+      precio_detal: numOrNull($("precio_detal").value),
+      precio_mayorista: numOrNull($("precio_mayorista").value),
+      impuesto: $("impuesto").value,
+      inc: numOrNull($("inc").value) ?? 0
+    };
+  }
+
+  // Devuelve { errores: [], avisos: [] }. Los errores bloquean el guardado.
+  function revisar(d) {
+    const errores = [];
+    const avisos = [];
+
+    if (!d.codigo_interno) errores.push("El código de barras es obligatorio (escríbelo, usa «Generar» o activa la generación automática).");
+    if (!d.nombre) errores.push("Escribe la descripción o la referencia.");
+    else if (d.nombre.length > 120) errores.push("Descripción + referencia no pueden pasar de 120 caracteres.");
+    if ($("grupo_sel").value === "Otro" && !d.grupo) errores.push("Escribe el nombre del grupo o elige Confecciones.");
+    if (d.precio_detal === null) errores.push("El precio detal es obligatorio.");
+    if (d.precio_detal !== null && d.precio_detal < 0) errores.push("El precio no puede ser negativo.");
+    if (d.inc < 0 || d.inc > 100) errores.push("El INC debe estar entre 0 y 100.");
+
+    if (d.codigo_barras) {
+      if (!/^\d+$/.test(d.codigo_barras)) errores.push("El código de barras solo puede tener dígitos.");
+      else if (!/^\d{6}$|^\d{8}$|^\d{12}$|^\d{13}$|^\d{14}$/.test(d.codigo_barras))
+        errores.push("El código de barras debe tener 6 dígitos (código corto) o 8, 12, 13 o 14 (EAN/UPC).");
+      else if (d.codigo_barras.length !== 6 && !gtinValido(d.codigo_barras))
+        avisos.push("El dígito verificador del código de barras no coincide: revisa que esté bien digitado.");
+    }
+
+    if (d.inc > 0) avisos.push("Tiene INC. Las prendas normalmente no lo llevan; confirma con tu contador.");
+
+    if (d.precio_detal !== null && d.costo !== null) {
+      const base = desglose(d.precio_detal, d.impuesto, d.inc).base;
+      if (base < d.costo) avisos.push("La base sin IVA del precio detal es menor que el costo.");
+    }
+
+    if (d.impuesto === "Exento" || d.impuesto === "Excluido" || d.impuesto === "No gravado")
+      avisos.push(`Tipo de impuesto "${d.impuesto}": confirma con tu contador que aplica a esta referencia.`);
+
+    return { errores, avisos };
+  }
+
+  function limpiarForm() {
+    $("form").reset();
+    setGrupo(GRUPO_DEFECTO);
+    $("inc").value = "0";
+    $("impuesto").value = "IVA 19%";
+    $("unidad").value = "Unidad";
+    cargarCfgPrecio();
+    quitarPlantilla();
+    actualizarDesglose();
+    actualizarSugerido();
+    $("ref").focus();
+  }
+  $("btnLimpiar").addEventListener("click", () => { limpiarForm(); mensaje($("msgForm"), "", ""); });
+
+  ["precio_detal", "inc", "impuesto"].forEach(id => $(id).addEventListener("input", actualizarDesglose));
+  $("impuesto").addEventListener("change", actualizarDesglose);
+
+  function mostrarPlantilla(p) {
+    $("bannerTxt").textContent =
+      `Plantilla: "${p.nombre}" (ref. ${p.codigo_interno}). Cambia la referencia y el código de barras antes de guardar.`;
+    $("banner").classList.add("on");
+  }
+  function quitarPlantilla() {
+    $("banner").classList.remove("on");
+    $("bannerTxt").textContent = "";
+  }
+  $("btnQuitarPlantilla").addEventListener("click", quitarPlantilla);
+
+  // Carga los datos de un producto guardado como base para uno nuevo
+  function usarComoPlantilla(p) {
+    $("ref").value = "";
+    $("barras").value = "";
+    // Quita la referencia del final ("Body Vf2944" -> "Body"): es la última palabra con algún dígito
+    const m = (p.nombre || "").match(/^(.*?)\s*\S*\d\S*$/);
+    $("nombre").value = m ? m[1] : (p.nombre || "");
+    setGrupo(p.grupo);
+    $("unidad").value = p.unidad || "Unidad";
+    $("costo").value = p.costo ?? "";
+    $("precio_detal").value = p.precio_detal ?? "";
+    $("precio_mayorista").value = p.precio_mayorista ?? "";
+    $("impuesto").value = p.impuesto || "IVA 19%";
+    $("inc").value = p.inc ?? 0;
+    mostrarPlantilla(p);
+    actualizarDesglose();
+    actualizarSugerido();
+    mensaje($("msgForm"), "", "");
+    $("ref").focus();
+    $("form").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  $("form").addEventListener("submit", e => {
+    e.preventDefault();
+    let d = leerForm();
+    let generado = null;
+    if (!d.codigo_barras && leerCfgBarras().auto) {
+      generado = siguienteBarras();
+      $("barras").value = generado;
+      d = leerForm();
+    }
+    const { errores, avisos } = revisar(d);
+    if (d.codigo_barras) {
+      const otro = barrasEnUso(d.codigo_barras);
+      if (otro) errores.push(`Ese código de barras ya está registrado en ${otro}.`);
+    }
+    if (errores.length) { mensaje($("msgForm"), errores.join("\n"), "error"); return; }
+
+    try {
+      db.run(
+        `INSERT INTO productos (codigo_interno, codigo_barras, nombre, grupo, costo,
+                                precio_detal, precio_mayorista, impuesto, inc, creado, unidad)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+        [d.codigo_interno, d.codigo_barras, d.nombre, d.grupo, d.costo,
+         d.precio_detal, d.precio_mayorista, d.impuesto, d.inc,
+         new Date().toISOString(), d.unidad]
+      );
+      marcarCambio();
+      agregarASesion(d);
+      recordarUltimoBarras(d.codigo_barras);
+      limpiarForm();
+      const lineas = ["Producto guardado." + (generado ? ` Código de barras generado: ${generado}` : ""), ...avisos];
+      mensaje($("msgForm"), lineas.join("\n"), avisos.length ? "warn" : "ok");
+      listar();
+    } catch (err) {
+      const txt = String(err.message || err);
+      if (txt.includes("UNIQUE") && txt.includes("codigo_interno")) {
+        mensaje($("msgForm"), "Ya existe un producto con esa referencia.", "error");
+      } else if (txt.includes("UNIQUE") && txt.includes("codigo_barras")) {
+        mensaje($("msgForm"), "Ese código de barras ya está registrado en otro producto.", "error");
+      } else {
+        mensaje($("msgForm"), "Error al guardar: " + txt, "error");
+      }
+    }
+  });
+
+  // ---------- listado ----------
+  function listar() {
+    const q = "%" + $("buscar").value.trim() + "%";
+    const stmt = db.prepare(`
+      SELECT id, codigo_interno, codigo_barras, nombre, grupo, unidad, costo,
+             precio_detal, precio_mayorista, impuesto, inc, exportado_siigo
+      FROM productos
+      WHERE codigo_interno LIKE ? OR IFNULL(codigo_barras,'') LIKE ? OR nombre LIKE ?
+      ORDER BY codigo_interno`);
+    stmt.bind([q, q, q]);
+    const filas = [];
+    while (stmt.step()) filas.push(stmt.getAsObject());
+    stmt.free();
+
+    const total = db.exec("SELECT COUNT(*) FROM productos")[0].values[0][0];
+    $("contador").textContent = `${filas.length} de ${total}`;
+
+    const cuerpo = $("cuerpo");
+    cuerpo.innerHTML = "";
+    if (filas.length === 0) {
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.colSpan = 14; td.className = "vacio";
+      td.textContent = total === 0 ? "Aún no hay productos." : "Sin resultados.";
+      tr.appendChild(td); cuerpo.appendChild(tr);
+      return;
+    }
+
+    for (const p of filas) {
+      const x = p.precio_detal !== null ? desglose(p.precio_detal, p.impuesto, p.inc) : null;
+      const tr = document.createElement("tr");
+      const celdas = [
+        { v: p.codigo_interno },
+        { v: p.codigo_barras },
+        { v: p.nombre },
+        { v: p.grupo },
+        { v: p.unidad || "Unidad" },
+        { v: p.impuesto },
+        { v: pesos(p.costo), num: true },
+        { v: pesos(p.precio_detal), num: true },
+        { v: x ? pesos(x.base) : "", num: true },
+        { v: x ? pesos(x.iva) : "", num: true },
+        { v: pesos(p.precio_mayorista), num: true },
+        { v: p.inc ?? 0, num: true },
+        { v: p.exportado_siigo ? p.exportado_siigo.slice(0, 10) : "" }
+      ];
+      celdas.forEach(c => {
+        const td = document.createElement("td");
+        td.textContent = c.v ?? "";
+        if (c.num) td.className = "num";
+        tr.appendChild(td);
+      });
+
+      const tdAcc = document.createElement("td");
+      const acc = document.createElement("div");
+      acc.className = "acc";
+
+      const bPlantilla = document.createElement("button");
+      bPlantilla.className = "mini sec";
+      bPlantilla.textContent = "Plantilla";
+      bPlantilla.addEventListener("click", () => usarComoPlantilla(p));
+
+      const bEtiqueta = document.createElement("button");
+      bEtiqueta.className = "mini sec";
+      bEtiqueta.textContent = "Etiqueta";
+      bEtiqueta.addEventListener("click", () => imprimirEtiqueta(p, $("msgLista")));
+
+      const bEliminar = document.createElement("button");
+      bEliminar.className = "mini peligro";
+      bEliminar.textContent = "Eliminar";
+      bEliminar.addEventListener("click", () => eliminar(p.id, p.codigo_interno, p.codigo_barras));
+
+      acc.append(bPlantilla, bEtiqueta, bEliminar);
+      tdAcc.appendChild(acc);
+      tr.appendChild(tdAcc);
+      cuerpo.appendChild(tr);
+    }
+  }
+  $("buscar").addEventListener("input", listar);
+
+  function eliminar(id, codigo, barras) {
+    const aviso = barras ? "\n\nSu código de barras quedará reservado y no se volverá a usar." : "";
+    if (!confirm(`¿Eliminar el producto ${codigo}?${aviso}`)) return;
+    if (barras) {
+      db.run("INSERT OR IGNORE INTO barras_reservadas (codigo, origen, creado) VALUES (?, 'eliminado', ?)",
+             [barras, new Date().toISOString()]);
+    }
+    db.run("DELETE FROM productos WHERE id = ?", [id]);
+    marcarCambio();
+    apiJson("/api/sesion/quitar", "POST", { referencia: codigo }).then(() => canal.postMessage("sesion")).catch(() => {});
+    mensaje($("msgLista"), `Producto ${codigo} eliminado.`, "ok");
+    listar();
+    actualizarInfoBarras();
+  }
+
+  // ---------- BarTender ----------
+  // La configuración vive en datos\config.json (la usa el servidor para llamar a bartend.exe)
+  let configSrv = null;
+  function leerCfg() {
+    return {
+      exe: $("bt_exe").value.trim().replace(/"/g, ""),
+      plantilla: $("bt_tpl").value.trim().replace(/"/g, ""),
+      impresora: $("bt_printer").value.trim().replace(/"/g, ""),
+      copias: Math.max(1, parseInt($("bt_copias").value, 10) || 1),
+      argumentos: $("bt_args").value.trim()
+    };
+  }
+  function cargarCfg() {
+    const c = configSrv.bartender;
+    $("bt_exe").value = c.exe || "";
+    $("bt_tpl").value = c.plantilla || "";
+    $("bt_printer").value = c.impresora || "";
+    $("bt_copias").value = c.copias || 1;
+    $("bt_args").value = c.argumentos || "";
+  }
+  async function guardarCfg() {
+    try {
+      configSrv = (await apiJson("/api/config", "PUT", { bartender: leerCfg() })).config;
+      return true;
+    } catch (err) {
+      mensaje($("msgForm"), "No se pudo guardar la configuración de BarTender: " + err.message, "error");
+      return false;
+    }
+  }
+  ["bt_exe", "bt_tpl", "bt_printer", "bt_copias", "bt_args"].forEach(id => $(id).addEventListener("change", guardarCfg));
+  $("btnGuardarBt").addEventListener("click", async () => {
+    if (await guardarCfg()) mensaje($("msgForm"), "Configuración de BarTender guardada.", "ok");
+  });
+  $("btnCarpetaEtiquetas").addEventListener("click", () => apiJson("/api/carpeta", "POST", { cual: "etiquetas" }).catch(() => {}));
+  // Buscar bartend.exe y la plantilla .btw con la ventana de Windows (abre en la última carpeta usada)
+  [["btnBuscarExe", "bartender", "bt_exe"], ["btnBuscarBtw", "btw", "bt_tpl"]].forEach(([boton, tipo, campo]) => {
+    $(boton).addEventListener("click", async () => {
+      try {
+        const r = await elegirArchivo(tipo, null, true);
+        if (!r) return;
+        $(campo).value = r.ruta;
+        if (await guardarCfg()) mensaje($("msgForm"), `Guardado: ${r.ruta}`, "ok");
+      } catch (err) { mensaje($("msgForm"), err.message, "error"); }
+    });
+  });
+  // Impresoras: las instaladas en Windows y las que ya se usaron (las usadas primero)
+  async function cargarImpresoras() {
+    try {
+      const { instaladas, usadas } = (await api("/api/impresoras")).datos;
+      const lista = $("listaImpresoras");
+      lista.innerHTML = "";
+      [...new Set([...usadas, ...instaladas])].forEach(n => {
+        const o = document.createElement("option");
+        o.value = n;
+        if (usadas.includes(n)) o.label = "usada antes";
+        lista.append(o);
+      });
+    } catch (e) { /* sin lista: se puede escribir a mano */ }
+  }
+  $("bt_printer").addEventListener("change", () => setTimeout(cargarImpresoras, 300));
+
+  // d = datos del producto (del formulario o de la base)
+  async function imprimirEtiqueta(d, msgEl) {
+    const ref = d.codigo_interno;
+    if (!ref) { mensaje(msgEl, "La etiqueta necesita una referencia.", "error"); return; }
+    if (!d.codigo_barras) { mensaje(msgEl, `La referencia ${ref} no tiene código de barras.`, "error"); return; }
+
+    const cfg = leerCfg();
+    if (!cfg.exe || !cfg.plantilla) {
+      mensaje(msgEl, "Falta la ruta de bartend.exe o la plantilla .btw en «Configuración de BarTender».", "error");
+      $("bt_exe").closest("details").open = true;
+      return;
+    }
+    mensaje(msgEl, `Enviando la etiqueta de ${ref} a BarTender…`, "");
+    try {
+      const fila = { referencia: ref, nombre: d.nombre || "", codigo_barras: d.codigo_barras || "",
+                     precio_detal: d.precio_detal ?? "", precio_mayorista: d.precio_mayorista ?? "", grupo: d.grupo || "", impuesto: d.impuesto || "" };
+      const r = await apiJson("/api/imprimir", "POST", { items: [{ ...fila, cantidad: cfg.copias }], origen: "lista" });
+      canal.postMessage("historial");
+      if (r.ok) mensaje(msgEl, `Etiqueta de ${ref} enviada a BarTender (${cfg.copias} copia${cfg.copias > 1 ? "s" : ""}).` + (r.nota ? "\n" + r.nota : ""), "ok");
+      else mensaje(msgEl, `BarTender no imprimió: ${r.error || "sin detalle"}\nComando: ${r.comando}`, "error");
+    } catch (err) {
+      mensaje(msgEl, err.message, "error");
+    }
+  }
+
+  $("btnImprimirForm").addEventListener("click", () => {
+    if (!$("barras").value.trim() && leerCfgBarras().auto) $("barras").value = siguienteBarras();
+    const d = leerForm();
+    const { errores } = revisar(d);
+    if (errores.length) { mensaje($("msgForm"), errores.join("\n"), "error"); return; }
+    imprimirEtiqueta(d, $("msgForm"));
+  });
+
+  // ---------- guardar / abrir base ----------
+  // Crea o migra la base. Devuelve true si tuvo que cambiar algo.
+  function asegurarEsquema(base) {
+    base = base || db;
+    const antes = base.exec("SELECT COUNT(*) FROM sqlite_master")[0].values[0][0];
+    base.run(ESQUEMA);
+    // Migraciones: bases creadas antes de cada columna nueva
+    const cols = base.exec("PRAGMA table_info(productos)")[0].values.map(r => r[1]);
+    let cambio = false;
+    if (!cols.includes("unidad")) { base.run("ALTER TABLE productos ADD COLUMN unidad TEXT DEFAULT 'Unidad'"); cambio = true; }
+    if (!cols.includes("exportado_siigo")) { base.run("ALTER TABLE productos ADD COLUMN exportado_siigo TEXT"); cambio = true; }
+    // La base misma impide dos productos con el mismo código de barras
+    try {
+      base.run("CREATE UNIQUE INDEX IF NOT EXISTS idx_barras_unico ON productos(codigo_barras) WHERE codigo_barras IS NOT NULL");
+    } catch (e) { /* hay repetidos: se avisa al abrir la base */ }
+    return cambio || base.exec("SELECT COUNT(*) FROM sqlite_master")[0].values[0][0] !== antes;
+  }
+
+  // Códigos de barras que ya están repetidos en una base abierta
+  function barrasRepetidos() {
+    const r = db.exec(`SELECT codigo_barras, GROUP_CONCAT(codigo_interno, ', ')
+                       FROM productos WHERE codigo_barras IS NOT NULL
+                       GROUP BY codigo_barras HAVING COUNT(*) > 1`);
+    return r.length ? r[0].values.map(v => `${v[0]} (referencias ${v[1]})`) : [];
+  }
+
+  // Descarga una copia de la base (la base ya se guarda sola en el disco)
+  $("btnGuardar").addEventListener("click", () => {
+    const fecha = new Date().toISOString().slice(0, 10);
+    descargar(`productos_${fecha}.sqlite`, db.export(), "application/octet-stream");
+    mensaje($("msgLista"), "Copia descargada. La base de trabajo sigue guardándose sola en el disco.", "ok");
+  });
+
+  // Abrir un .sqlite (por ejemplo, uno guardado con la versión de un solo archivo):
+  // reemplaza la base de trabajo, después de hacer una copia de seguridad de la actual.
+  $("btnAbrir").addEventListener("click", async () => {
+    const r = await elegirArchivo("base", $("archivoBase"));
+    if (r) abrirBase(r.nombre, await bytesElegido("base"));
+  });
+  $("archivoBase").addEventListener("change", async e => {
+    const f = e.target.files[0];
+    e.target.value = "";
+    if (f) abrirBase(f.name, new Uint8Array(await f.arrayBuffer()));
+  });
+  async function abrirBase(nombreArchivo, bytes) {
+    const f = { name: nombreArchivo };
+    let nueva;
+    try {
+      nueva = new SQL.Database(bytes);
+      nueva.exec("SELECT COUNT(*) FROM sqlite_master");
+      asegurarEsquema(nueva);
+    } catch (err) {
+      mensaje($("msgLista"), "No se pudo abrir el archivo: " + err.message, "error");
+      return;
+    }
+    const n = nueva.exec("SELECT COUNT(*) FROM productos")[0].values[0][0];
+    if (!confirm(`¿Usar ${f.name} (${n} productos) como base de trabajo?\n\n` +
+                 "La base actual se guarda antes en la carpeta de copias de seguridad.")) { nueva.close(); return; }
+    await guardando;
+    db = nueva;
+    await guardarEnDisco(true);
+    const repetidos = barrasRepetidos();
+    if (repetidos.length) {
+      mensaje($("msgLista"),
+        `Base cargada: ${f.name}\nAtención: hay códigos de barras repetidos. Corrígelos:\n` + repetidos.join("\n"), "warn");
+    } else if (!bloqueado && !cambios) {
+      mensaje($("msgLista"), `Base cargada y guardada: ${f.name} (${n} productos).`, "ok");
+    }
+    listar();
+    sincronizarUltimoBarras();
+    actualizarInfoBarras();
+  }
+
+  // ---------- ubicación de la base y copias ----------
+  async function pintarInfoBase() {
+    try {
+      const { datos } = await api("/api/estado");
+      $("info_base").textContent = `Archivo: ${datos.rutaBase}\nCopias de seguridad: ${datos.copias}` +
+        (datos.ultimaCopia ? ` (última: ${datos.ultimaCopia})` : "");
+      $("info_base").style.whiteSpace = "pre-line";
+    } catch (err) { $("info_base").textContent = err.message; }
+  }
+  $("btnCambiarRuta").addEventListener("click", async () => {
+    const ruta = $("cfg_ruta").value.trim().replace(/"/g, "");
+    if (ruta && !/\.(sqlite|db)$/i.test(ruta)) { mensaje($("msgLista"), "La ruta debe terminar en .sqlite (por ejemplo C:\\Users\\...\\OneDrive\\productos.sqlite).", "error"); return; }
+    if (!confirm(`¿Usar ${ruta || "la ubicación por defecto (datos\\productos.sqlite)"} como base?\n\nSi ahí no hay una base, se copia la actual.`)) return;
+    await guardando;
+    try {
+      const r = await apiJson("/api/config", "PUT", { rutaBase: ruta });
+      if (r.nota) alert(r.nota);
+      location.reload();
+    } catch (err) { mensaje($("msgLista"), err.message, "error"); }
+  });
+  $("btnCopiaAhora").addEventListener("click", async () => {
+    await guardando;
+    try {
+      const r = await apiJson("/api/copia", "POST", {});
+      mensaje($("msgLista"), `Copia hecha: ${r.archivo}`, "ok");
+      pintarInfoBase();
+    } catch (err) { mensaje($("msgLista"), err.message, "error"); }
+  });
+  $("btnCarpetaCopias").addEventListener("click", () => apiJson("/api/carpeta", "POST", { cual: "copias" }).catch(() => {}));
+  $("btnCarpetaConfig").addEventListener("click", () => apiJson("/api/carpeta", "POST", { cual: "configuracion" }).catch(() => {}));
+  $("btnSalir").addEventListener("click", async () => {
+    await guardando;
+    if (cambios && !confirm("Hay cambios sin guardar. ¿Cerrar de todos modos?")) return;
+    if (!cambios && !confirm("¿Cerrar el programa? Para volver a abrirlo usa el acceso directo.")) return;
+    try { await apiJson("/api/salir", "POST", {}); } catch (e) { /* ya cerrado */ }
+    cambios = false;
+    document.body.innerHTML = "<p style='padding:30px;font-size:16px'>Programa cerrado. Ya puedes cerrar esta pestaña.</p>";
+  });
+
+  // ---------- exportar CSV (para Excel) ----------
+  $("btnCsv").addEventListener("click", () => {
+    const res = db.exec(`SELECT codigo_interno, codigo_barras, nombre, grupo, unidad, impuesto,
+                                costo, precio_detal, precio_mayorista, inc, creado
+                         FROM productos ORDER BY codigo_interno`);
+    if (!res.length) { mensaje($("msgLista"), "No hay productos para exportar.", "error"); return; }
+    const cab = ["referencia", "codigo_barras", "nombre", "grupo", "unidad", "impuesto",
+                 "costo_sin_iva", "precio_detal_con_iva", "base_detal", "iva_detal",
+                 "precio_mayorista_con_iva", "inc_pct", "creado"];
+    const filas = res[0].values.map(r => {
+      const [ref, barras, nombre, grupo, unidad, impuesto, costo, pd, pm, inc, creado] = r;
+      const x = pd !== null ? desglose(pd, impuesto, inc) : null;
+      return [ref, barras, nombre, grupo, unidad || "Unidad", impuesto, costo, pd,
+              x ? x.base : "", x ? x.iva : "", pm, inc, creado];
+    });
+    const lineas = [cab.join(";"), ...filas.map(r => r.map(v => csvEsc(v, ";")).join(";"))];
+    const fecha = new Date().toISOString().slice(0, 10);
+    descargar(`productos_${fecha}.csv`, "\uFEFF" + lineas.join("\r\n"), "text/csv;charset=utf-8");
+  });
+
+  // ---------- Excel para Siigo ----------
+  let siigoInfo = null;
+  function el(tag, props, ...hijos) {
+    const e = Object.assign(document.createElement(tag), props || {});
+    hijos.forEach(h => e.append(h));
+    return e;
+  }
+  async function cargarSiigo() {
+    try {
+      siigoInfo = (await api("/api/siigo")).datos;
+    } catch (err) {
+      siigoInfo = null;
+      $("siigoPlantilla").textContent = "No pude leer la plantilla: " + err.message;
+      $("siigoCols").innerHTML = "";
+      return;
+    }
+    pintarSiigo();
+  }
+  function pintarSiigo() {
+    const cuerpo = $("siigoCols");
+    cuerpo.innerHTML = "";
+    if (!siigoInfo.plantilla) {
+      $("siigoPlantilla").textContent = "Aún no hay plantilla. Cárgala con el botón o déjala en la carpeta «plantillas».";
+      $("siigoDeteccion").textContent = "";
+      return;
+    }
+    const cols = siigoInfo.columnas;
+    $("siigoPlantilla").textContent =
+      `Plantilla: ${siigoInfo.plantilla} · hoja «${siigoInfo.hoja}» · encabezados en la fila ${siigoInfo.fila} · ` +
+      `${cols.length} columnas, ${cols.filter(k => k.obligatoria).length} obligatorias.`;
+    const sinDato = cols.filter(k => k.obligatoria && !k.campo).map(k => k.titulo);
+    $("siigoDeteccion").textContent = siigoInfo.deteccion +
+      (sinDato.length ? `\nObligatorias sin dato asignado: ${sinDato.join(", ")}.` : "");
+    $("siigoDeteccion").style.whiteSpace = "pre-line";
+    if (sinDato.length) $("siigoColsBox").open = true;
+
+    for (const k of cols) {
+      const tr = el("tr");
+      tr.dataset.titulo = k.titulo;
+      const tdT = el("td", {}, el("b", { textContent: k.titulo }), ` (${k.letra})`);
+      if (k.lista) {
+        const muestra = k.lista.slice(0, 6).join(", ") + (k.lista.length > 6 ? `… (${k.lista.length})` : "");
+        tdT.append(el("div", { className: "ayuda", textContent: "Lista: " + (muestra || "vacía") }));
+      }
+      const chk = el("input", { type: "checkbox", checked: !!k.obligatoria, className: "c-ob" });
+      chk.style.width = "auto";
+      const sel = el("select", { className: "c-campo" });
+      sel.append(el("option", { value: "", textContent: "(vacía)" }));
+      for (const [v, t] of Object.entries(siigoInfo.campos)) sel.append(el("option", { value: v, textContent: t }));
+      sel.append(el("option", { value: "_fijo", textContent: "Valor fijo →" }));
+      sel.value = k.campo || "";
+      const fijo = el("input", { className: "c-fijo", value: k.fijo || "", placeholder: "Igual para todos" });
+      if (k.lista && k.lista.length) {
+        const dl = el("datalist", { id: "dl_" + k.letra });
+        k.lista.forEach(v => dl.append(el("option", { value: v })));
+        fijo.setAttribute("list", dl.id);
+        tr.append(dl);
+      }
+      const eq = el("textarea", { className: "c-eq", rows: 2,
+        value: Object.entries(k.equivalencias || {}).map(([a, b]) => `${a} = ${b}`).join("\n"),
+        placeholder: k.lista ? "Ej.: Exento = Exento de IVA" : "" });
+      const actualizarVis = () => {
+        fijo.hidden = sel.value !== "_fijo";
+        eq.hidden = !sel.value || sel.value === "_fijo";
+      };
+      sel.addEventListener("change", actualizarVis);
+      actualizarVis();
+      tr.append(tdT, el("td", {}, chk, " ", el("span", { className: "pill" + (k.obligatoriaPorColor ? " ob" : ""),
+                textContent: k.obligatoriaPorColor ? "azul oscuro" : (k.color ? "claro" : "sin color") })),
+                el("td", {}, sel), el("td", {}, fijo), el("td", {}, eq));
+      cuerpo.append(tr);
+    }
+  }
+  function leerColumnasSiigo() {
+    const columnas = {};
+    for (const tr of $("siigoCols").querySelectorAll("tr[data-titulo]")) {
+      const equivalencias = {};
+      tr.querySelector(".c-eq").value.split("\n").forEach(linea => {
+        const i = linea.indexOf("=");
+        if (i > 0 && linea.slice(0, i).trim()) equivalencias[linea.slice(0, i).trim()] = linea.slice(i + 1).trim();
+      });
+      columnas[tr.dataset.titulo] = {
+        campo: tr.querySelector(".c-campo").value,
+        fijo: tr.querySelector(".c-fijo").value.trim(),
+        obligatoria: tr.querySelector(".c-ob").checked,
+        equivalencias
+      };
+    }
+    return columnas;
+  }
+  async function guardarColumnasSiigo() {
+    if (!siigoInfo || !siigoInfo.plantilla) return;
+    await apiJson("/api/config", "PUT", { siigo: { columnas: leerColumnasSiigo() } });
+    await cargarSiigo();
+  }
+  $("btnGuardarCols").addEventListener("click", async () => {
+    try { await guardarColumnasSiigo(); mostrarInforme("Columnas guardadas.", "ok"); }
+    catch (err) { mostrarInforme(err.message, "error"); }
+  });
+  $("btnCargarPlantilla").addEventListener("click", async () => {
+    try {
+      const r = await elegirArchivo("plantillaSiigo", $("archivoPlantilla"), true);
+      if (!r) return;
+      await cargarSiigo();
+      $("siigoColsBox").open = true;
+      mostrarInforme(`Plantilla cargada: ${r.nombre}. Revisa qué dato va en cada columna y guarda.`, "ok");
+    } catch (err) { mostrarInforme(err.message, "error"); }
+  });
+  $("archivoPlantilla").addEventListener("change", async e => {
+    const f = e.target.files[0];
+    e.target.value = "";
+    if (!f) return;
+    try {
+      await api("/api/siigo/plantilla", { method: "POST", headers: { "X-Nombre": encodeURIComponent(f.name) }, body: await f.arrayBuffer() });
+      await cargarSiigo();
+      $("siigoColsBox").open = true;
+      mostrarInforme(`Plantilla cargada: ${f.name}. Revisa qué dato va en cada columna y guarda.`, "ok");
+    } catch (err) { mostrarInforme(err.message, "error"); }
+  });
+  $("btnCarpetaPlantillas").addEventListener("click", () => apiJson("/api/carpeta", "POST", { cual: "plantillas" }).catch(() => {}));
+  $("btnCarpetaExportados").addEventListener("click", () => apiJson("/api/carpeta", "POST", { cual: "exportados" }).catch(() => {}));
+  $("btnIrSiigo").addEventListener("click", () => $("siigoCard").scrollIntoView({ behavior: "smooth", block: "start" }));
+
+  function mostrarInforme(contenido, tipo) {
+    const box = $("siigoInforme");
+    box.innerHTML = "";
+    box.className = "informe msg " + (tipo || "");
+    if (typeof contenido === "string") box.textContent = contenido; else box.append(contenido);
+  }
+  function productosParaSiigo() {
+    const where = $("siigoSoloNuevos").checked ? "WHERE exportado_siigo IS NULL" : "";
+    const res = db.exec(`SELECT codigo_interno, codigo_barras, nombre, grupo, unidad, impuesto,
+                                costo, precio_detal, precio_mayorista, inc
+                         FROM productos ${where} ORDER BY codigo_interno`);
+    if (!res.length) return [];
+    return res[0].values.map(v => Object.fromEntries(res[0].columns.map((c, i) => [c, v[i]])));
+  }
+  function informeSiigo(r) {
+    const frag = document.createDocumentFragment();
+    frag.append(`${r.validos} de ${r.total} productos listos para Siigo.`);
+    if (r.sinColumna.length) frag.append(el("div", { textContent: `Columnas obligatorias sin dato asignado: ${r.sinColumna.join(", ")}. Asígnales un dato o un valor fijo en «Columnas de la plantilla».` }));
+    if (r.fallan.length) {
+      frag.append(el("div", { textContent: `${r.fallan.length} con problemas:` }));
+      const ul = el("ul");
+      r.fallan.slice(0, 200).forEach(f => ul.append(el("li", { textContent: `${f.ref} (${f.nombre}): ${f.problemas.join("; ")}` })));
+      if (r.fallan.length > 200) ul.append(el("li", { textContent: `… y ${r.fallan.length - 200} más.` }));
+      frag.append(ul);
+    }
+    if (r.archivos && r.archivos.length) {
+      frag.append(el("div", { textContent: `Archivos creados en ${r.carpeta}:` }));
+      const ul = el("ul");
+      r.archivos.forEach(a => ul.append(el("li", { textContent: `${a.nombre} (${a.filas} productos)` +
+        (a.sobrantes ? ` · atención: la plantilla ya traía ${a.sobrantes} filas con datos debajo` : "") })));
+      frag.append(ul);
+    }
+    return frag;
+  }
+  async function exportarSiigo(soloValidar) {
+    if (!siigoInfo || !siigoInfo.plantilla) { mostrarInforme("Primero carga la plantilla de Siigo (.xlsx).", "error"); return; }
+    try {
+      await guardarColumnasSiigo();
+      const productos = productosParaSiigo();
+      if (!productos.length) {
+        mostrarInforme($("siigoSoloNuevos").checked ? "No hay productos sin exportar. Desmarca «Solo productos que aún no se han exportado» para incluir todos." : "No hay productos.", "warn");
+        return;
+      }
+      mostrarInforme("Revisando…", "");
+      let r = await apiJson("/api/siigo/exportar", "POST", { productos, soloValidar });
+      if (!soloValidar && !r.archivos.length && r.fallan.length && r.validos > 0) {
+        mostrarInforme(informeSiigo(r), "warn");
+        if (!confirm(`${r.fallan.length} productos tienen problemas (ver la lista).\n¿Exportar solo los ${r.validos} que están bien?`)) return;
+        r = await apiJson("/api/siigo/exportar", "POST", { productos, soloValidos: true });
+      }
+      if (r.archivos && r.archivos.length) {
+        const ahora = new Date().toISOString();
+        db.run("BEGIN");
+        r.exportados.forEach(ref => db.run("UPDATE productos SET exportado_siigo = ? WHERE codigo_interno = ?", [ahora, ref]));
+        db.run("COMMIT");
+        marcarCambio();
+        listar();
+      }
+      mostrarInforme(informeSiigo(r), r.fallan.length || r.sinColumna.length ? "warn" : "ok");
+    } catch (err) {
+      mostrarInforme(err.message, "error");
+    }
+  }
+  $("btnValidarSiigo").addEventListener("click", () => exportarSiigo(true));
+  $("btnExportarSiigo").addEventListener("click", () => exportarSiigo(false));
+
+  // ---------- inicio ----------
+  window.addEventListener("beforeunload", e => {
+    if (cambios) { e.preventDefault(); e.returnValue = ""; }
+  });
+
+  // Lee la base del disco (o crea una nueva si aún no existe)
+  async function cargarBase() {
+    const { datos, r } = await api("/api/base");
+    versionBase = r.headers.get("X-Version");
+    const bytes = new Uint8Array(datos);
+    db = bytes.length ? new SQL.Database(bytes) : new SQL.Database();
+    const migro = asegurarEsquema();
+    if (!bytes.length || migro) await guardarEnDisco();
+    else estadoGuardado("Guardado");
+    const repetidos = barrasRepetidos();
+    if (repetidos.length) {
+      mensaje($("msgLista"), "Atención: hay códigos de barras repetidos. Corrígelos:\n" + repetidos.join("\n"), "warn");
+    }
+    listar();
+    sincronizarUltimoBarras();
+    actualizarInfoBarras();
+  }
+
+  try {
+    configSrv = (await api("/api/config")).datos;
+    cargarCfg();
+    $("cfg_ruta").value = configSrv.rutaBase || "";
+    cargarCfgBarras();
+    setGrupo(GRUPO_DEFECTO);
+    await cargarBase();
+  } catch (err) {
+    document.querySelector("main").innerHTML =
+      `<p style='padding:20px;color:#dc2626'>No se pudo abrir la base: ${String(err.message).replace(/</g, "&lt;")}<br>Cierra y vuelve a abrir el programa.</p>`;
+    estadoGuardado("Error", true);
+    return;
+  }
+  cargarCfgPrecio();
+  actualizarDesglose();
+  actualizarSugerido();
+  pintarInfoBase();
+  cargarImpresoras();
+  cargarSiigo();
+  $("ref").focus();
+})();
+</script>
+</body>
+</html>

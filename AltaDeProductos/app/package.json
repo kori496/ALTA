@@ -1,0 +1,10 @@
+{
+  "name": "alta-de-productos",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Alta de productos para la tienda: base SQLite local, Excel para Siigo y etiquetas BarTender",
+  "main": "server.js",
+  "dependencies": {
+    "jszip": "3.10.1"
+  }
+}

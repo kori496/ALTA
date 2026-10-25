@@ -1,0 +1,6 @@
+﻿Opciones guardadas de Alta de productos (opciones.json):
+- BarTender: ruta de bartend.exe, plantilla .btw, impresora, copias y parámetros
+- impresoras ya usadas y última carpeta de cada tipo de archivo (base, plantilla de Siigo, .btw, bartend.exe, códigos)
+- ubicación de la base y columnas de la plantilla de Siigo
+
+Para llevar las opciones a otro computador, copia esta carpeta a la carpeta del programa de allá.

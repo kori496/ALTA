@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="token" content="__TOKEN__">
+<title>Imprimir etiquetas</title>
+<style>
+  :root { --bg:#f5f6f8; --card:#fff; --ink:#1d2330; --muted:#6b7280; --line:#dde1e7; --accent:#2563eb; --danger:#dc2626; --ok:#15803d; --warn:#b45309; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--ink); }
+  header { background:#111827; color:#fff; padding:14px 20px; display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; }
+  header h1 { font-size:18px; margin:0; }
+  main { padding:20px; display:grid; gap:20px; max-width:1300px; margin:0 auto; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; min-width:0; }
+  .card h2 { font-size:15px; margin:0 0 12px; }
+  label { display:block; font-size:12px; color:var(--muted); margin:8px 0 3px; }
+  input { padding:7px 9px; border:1px solid var(--line); border-radius:6px; font-size:14px; background:#fff; }
+  button { padding:8px 14px; border:0; border-radius:6px; background:var(--accent); color:#fff; font-size:14px; cursor:pointer; }
+  button.sec { background:#e5e7eb; color:var(--ink); }
+  button.mini { padding:4px 8px; font-size:12px; }
+  button.imprimir { background:#16a34a; font-weight:700; font-size:15px; padding:10px 18px; }
+  button:disabled { opacity:.5; cursor:default; }
+  .fila { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; }
+  .fila > div { min-width:200px; }
+  .ayuda { font-size:12px; color:var(--muted); margin:8px 0 0; line-height:1.5; }
+  .msg { margin-top:10px; font-size:13px; min-height:18px; white-space:pre-line; }
+  .msg.ok { color:var(--ok); } .msg.error { color:var(--danger); } .msg.warn { color:var(--warn); }
+  .toolbar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:10px; }
+  .tabla-wrap { overflow:auto; max-height:60vh; border:1px solid var(--line); border-radius:8px; }
+  table { border-collapse:collapse; width:100%; font-size:13px; background:#fff; }
+  th, td { padding:7px 9px; border-bottom:1px solid var(--line); text-align:left; white-space:nowrap; }
+  th { position:sticky; top:0; background:#f9fafb; font-weight:600; z-index:1; }
+  td.num, th.num { text-align:right; font-variant-numeric: tabular-nums; }
+  td input.precio { width:110px; text-align:right; }
+  td input.cant { width:70px; text-align:right; }
+  .vacio { text-align:center; color:var(--muted); padding:24px; }
+  .contador { font-size:13px; color:var(--muted); font-weight:400; margin-left:8px; }
+  .estado-ok { color:var(--ok); font-weight:600; }
+  .estado-error { color:var(--danger); font-weight:600; }
+  .resumen { font-size:14px; font-weight:600; }
+  tr.editado td { background:#fffbeb; }
+</style>
+</head>
+<body>
+<header>
+  <div class="toolbar" style="margin:0">
+    <button class="sec" id="btnVolver">← Volver</button>
+    <h1>Imprimir etiquetas</h1>
+  </div>
+  <div class="toolbar" style="margin:0">
+    <button class="sec" id="btnLog">Ver log de impresiones</button>
+    <button class="sec" id="btnActualizar">Actualizar</button>
+  </div>
+</header>
+
+<main>
+  <section class="card">
+    <h2>Configuración de impresión</h2>
+    <div class="fila">
+      <div style="flex:2"><label>Plantilla de etiqueta (.btw)</label><div id="cfgPlantilla" class="resumen"></div></div>
+      <div style="flex:1"><label for="impresora">Impresora (obligatoria)</label><input id="impresora" list="listaImpresoras" placeholder="Elige la impresora de la lista" style="width:100%"><datalist id="listaImpresoras"></datalist></div>
+      <div><button class="sec" id="btnGuardarCfg">Guardar impresora</button></div>
+    </div>
+    <p class="ayuda">La ruta de BarTender, la plantilla y los parámetros se cambian en la ventana principal, en «Configuración de BarTender».</p>
+    <div class="msg" id="msgCfg"></div>
+  </section>
+
+  <section class="card">
+    <h2>Productos de esta sesión <span class="contador" id="desde"></span></h2>
+    <div class="toolbar">
+      <button class="sec mini" id="btnTodos">Marcar todos</button>
+      <button class="sec mini" id="btnNinguno">Quitar marcas</button>
+      <span class="ayuda" style="margin:0">Cantidad para los marcados:</span>
+      <input id="cantTodos" type="number" min="1" value="1" style="width:70px">
+      <button class="sec mini" id="btnAplicarCant">Aplicar</button>
+    </div>
+    <div class="tabla-wrap">
+      <table>
+        <thead><tr>
+          <th></th><th>Referencia</th><th>Nombre</th><th>Código de barras</th>
+          <th class="num">Precio en etiqueta</th><th class="num">Etiquetas</th><th class="num">Ya impresas</th>
+        </tr></thead>
+        <tbody id="cuerpoProductos"></tbody>
+      </table>
+    </div>
+    <p class="ayuda">Solo aparecen los productos guardados desde que se abrió el programa. Cambiar el precio aquí solo cambia la etiqueta, no el producto guardado.</p>
+    <div class="botones toolbar" style="margin-top:12px">
+      <button class="imprimir" id="btnImprimir">Imprimir</button>
+      <span class="resumen" id="resumen"></span>
+    </div>
+    <div class="msg" id="msgImprimir"></div>
+  </section>
+
+  <section class="card">
+    <h2>Historial de esta sesión <span class="contador" id="totalHist"></span></h2>
+    <div class="tabla-wrap">
+      <table>
+        <thead><tr>
+          <th>Hora</th><th>Referencia</th><th>Nombre</th><th class="num">Precio</th><th class="num">Etiquetas</th>
+          <th>Desde</th><th>Resultado</th><th>Reimprimir (cantidad · precio)</th>
+        </tr></thead>
+        <tbody id="cuerpoHist"></tbody>
+      </table>
+    </div>
+    <p class="ayuda">El historial se borra al cerrar el programa o con <b>Ctrl+F7</b> (reinicia la sesión). Cada impresión también queda en el log (<b>datos\impresiones.log</b>), que no se borra.</p>
+    <div class="msg" id="msgHist"></div>
+  </section>
+</main>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  let TOKEN = document.querySelector('meta[name="token"]').content;
+  let sesion = { productos: [], historial: [] };
+  let config = null;
+  const estado = new Map(); // referencia -> { marcado, precio, cantidad } (lo que el usuario ajustó)
+
+  // La clave cambia cada vez que arranca el programa. Si se reinició con la pestaña abierta,
+  // se pide la clave nueva a la página y se repite la operación (sin recargar).
+  async function renovarToken() {
+    const h = await (await fetch(location.pathname, { cache: "no-store" })).text();
+    const m = h.match(/<meta name="token" content="([0-9a-f]+)">/);
+    if (!m) throw new Error("No se pudo renovar la sesión. Recarga la página (F5).");
+    TOKEN = m[1];
+  }
+  async function api(ruta, metodo, cuerpo, reintento) {
+    const r = await fetch(ruta, {
+      method: metodo || "GET",
+      headers: { "X-Token": TOKEN, "Content-Type": "application/json" },
+      body: cuerpo ? JSON.stringify(cuerpo) : undefined
+    });
+    if (r.status === 403 && !reintento) { await renovarToken(); return api(ruta, metodo, cuerpo, true); }
+    const datos = await r.json();
+    if (!r.ok) throw new Error(datos.error || `Error ${r.status}`);
+    return datos;
+  }
+  function mensaje(el, texto, tipo) { el.textContent = texto; el.className = "msg " + (tipo || ""); }
+  function pesos(n) {
+    if (n === null || n === undefined || n === "") return "";
+    return "$" + Number(n).toLocaleString("es-CO", { maximumFractionDigits: 2 });
+  }
+  function hora(iso) { return new Date(iso).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", second: "2-digit" }); }
+  function el(tag, props, ...hijos) {
+    const e = Object.assign(document.createElement(tag), props || {});
+    hijos.forEach(h => e.append(h));
+    return e;
+  }
+  function impresas(ref) {
+    return sesion.historial.filter(h => h.referencia === ref && h.ok).reduce((s, h) => s + h.cantidad, 0);
+  }
+
+  // ---------- productos de la sesión ----------
+  function estadoDe(p) {
+    if (!estado.has(p.referencia)) {
+      estado.set(p.referencia, { marcado: impresas(p.referencia) === 0 && !!p.codigo_barras, precio: p.precio_detal ?? "", cantidad: 1 });
+    }
+    return estado.get(p.referencia);
+  }
+  function pintarProductos() {
+    const cuerpo = $("cuerpoProductos");
+    cuerpo.innerHTML = "";
+    $("desde").textContent = `desde las ${hora(sesion.inicio)} · ${sesion.productos.length} producto${sesion.productos.length === 1 ? "" : "s"}`;
+    if (!sesion.productos.length) {
+      cuerpo.append(el("tr", {}, el("td", { colSpan: 7, className: "vacio",
+        textContent: "Aún no has guardado productos en esta sesión. Guárdalos en la ventana principal y aparecerán aquí." })));
+      actualizarResumen();
+      return;
+    }
+    for (const p of sesion.productos.slice().reverse()) {
+      const st = estadoDe(p);
+      const tr = el("tr");
+      const chk = el("input", { type: "checkbox", checked: st.marcado, disabled: !p.codigo_barras });
+      chk.addEventListener("change", () => { st.marcado = chk.checked; actualizarResumen(); });
+      const precio = el("input", { type: "number", min: 0, step: "any", value: st.precio, className: "precio" });
+      precio.addEventListener("input", () => {
+        st.precio = precio.value;
+        tr.classList.toggle("editado", String(st.precio) !== String(p.precio_detal ?? ""));
+      });
+      const cant = el("input", { type: "number", min: 1, step: 1, value: st.cantidad, className: "cant" });
+      cant.addEventListener("input", () => { st.cantidad = cant.value; actualizarResumen(); });
+      tr.classList.toggle("editado", String(st.precio) !== String(p.precio_detal ?? ""));
+      const n = impresas(p.referencia);
+      tr.append(
+        el("td", {}, chk),
+        el("td", { textContent: p.referencia }),
+        el("td", { textContent: p.nombre }),
+        el("td", { textContent: p.codigo_barras || "sin código (no se puede imprimir)" }),
+        el("td", { className: "num" }, precio),
+        el("td", { className: "num" }, cant),
+        el("td", { className: "num", textContent: n ? String(n) : "—" })
+      );
+      cuerpo.append(tr);
+    }
+    actualizarResumen();
+  }
+  function seleccion() {
+    return sesion.productos.filter(p => p.codigo_barras && estadoDe(p).marcado).map(p => {
+      const st = estadoDe(p);
+      return { ...p, precio_detal: st.precio === "" ? null : Number(st.precio), cantidad: parseInt(st.cantidad, 10) };
+    });
+  }
+  function actualizarResumen() {
+    const sel = seleccion();
+    const total = sel.reduce((s, it) => s + (Number.isInteger(it.cantidad) && it.cantidad > 0 ? it.cantidad : 0), 0);
+    $("resumen").textContent = sel.length ? `${sel.length} producto${sel.length > 1 ? "s" : ""} · ${total} etiqueta${total === 1 ? "" : "s"}` : "Marca los productos que quieres imprimir.";
+    $("btnImprimir").disabled = !sel.length;
+  }
+  $("btnTodos").addEventListener("click", () => {
+    sesion.productos.forEach(p => { if (p.codigo_barras) estadoDe(p).marcado = true; });
+    pintarProductos();
+  });
+  $("btnNinguno").addEventListener("click", () => {
+    sesion.productos.forEach(p => { estadoDe(p).marcado = false; });
+    pintarProductos();
+  });
+  $("btnAplicarCant").addEventListener("click", () => {
+    const n = parseInt($("cantTodos").value, 10);
+    if (!Number.isInteger(n) || n < 1) { mensaje($("msgImprimir"), "La cantidad debe ser un número entero mayor que 0.", "error"); return; }
+    sesion.productos.forEach(p => { const st = estadoDe(p); if (st.marcado) st.cantidad = n; });
+    pintarProductos();
+  });
+
+  async function imprimir(items, origen, msgEl) {
+    for (const it of items) {
+      if (!Number.isInteger(it.cantidad) || it.cantidad < 1) { mensaje(msgEl, `Cantidad no válida para ${it.referencia}.`, "error"); return false; }
+      if (it.precio_detal !== null && (!Number.isFinite(it.precio_detal) || it.precio_detal < 0)) { mensaje(msgEl, `Precio no válido para ${it.referencia}.`, "error"); return false; }
+    }
+    const total = items.reduce((s, it) => s + it.cantidad, 0);
+    const lista = items.map(it => `• ${it.referencia} — ${it.cantidad} × ${pesos(it.precio_detal) || "sin precio"}`).join("\n");
+    if (!confirm(`¿Imprimir ${total} etiqueta${total > 1 ? "s" : ""}?\n\n${lista}`)) return false;
+    mensaje(msgEl, "Enviando a BarTender…", "");
+    $("btnImprimir").disabled = true;
+    try {
+      const r = await api("/api/imprimir", "POST", { items, origen });
+      if (r.ok) mensaje(msgEl, `Listo: ${r.total} etiqueta${r.total > 1 ? "s" : ""} enviada${r.total > 1 ? "s" : ""} a BarTender.` + (r.nota ? "\n" + r.nota : ""), "ok");
+      else mensaje(msgEl, `BarTender no imprimió: ${r.error || "sin detalle"}` + (r.comando ? `\nComando: ${r.comando}` : "") + "\nQuedó anotado en el historial y en el log.", "error");
+      return r.ok;
+    } catch (err) {
+      mensaje(msgEl, err.message, "error");
+      return false;
+    } finally {
+      await cargar();
+    }
+  }
+  $("btnImprimir").addEventListener("click", async () => {
+    const items = seleccion();
+    if (await imprimir(items, "sesion", $("msgImprimir"))) {
+      items.forEach(it => { estadoDe(it).marcado = false; });
+      pintarProductos();
+    }
+  });
+
+  // ---------- historial ----------
+  function pintarHistorial() {
+    const cuerpo = $("cuerpoHist");
+    cuerpo.innerHTML = "";
+    const ok = sesion.historial.filter(h => h.ok);
+    const total = ok.reduce((s, h) => s + h.cantidad, 0);
+    $("totalHist").textContent = `${total} etiqueta${total === 1 ? "" : "s"} impresa${total === 1 ? "" : "s"} en ${ok.length} impresi${ok.length === 1 ? "ón" : "ones"}`;
+    if (!sesion.historial.length) {
+      cuerpo.append(el("tr", {}, el("td", { colSpan: 8, className: "vacio", textContent: "Todavía no se ha impreso nada en esta sesión." })));
+      return;
+    }
+    for (const h of sesion.historial) {
+      const cant = el("input", { type: "number", min: 1, step: 1, value: h.cantidad, className: "cant" });
+      const precio = el("input", { type: "number", min: 0, step: "any", value: h.precio_detal ?? "", className: "precio" });
+      const btn = el("button", { className: "mini", textContent: "Reimprimir" });
+      btn.addEventListener("click", () => imprimir([{
+        referencia: h.referencia, nombre: h.nombre, codigo_barras: h.codigo_barras, grupo: h.grupo, impuesto: h.impuesto,
+        precio_mayorista: h.precio_mayorista,
+        precio_detal: precio.value === "" ? null : Number(precio.value), cantidad: parseInt(cant.value, 10)
+      }], "reimpresion", $("msgHist")));
+      cuerpo.append(el("tr", {},
+        el("td", { textContent: hora(h.hora) }),
+        el("td", { textContent: h.referencia }),
+        el("td", { textContent: h.nombre }),
+        el("td", { className: "num", textContent: pesos(h.precio_detal) || "—" }),
+        el("td", { className: "num", textContent: String(h.cantidad) }),
+        el("td", { textContent: h.origen }),
+        el("td", { className: h.ok ? "estado-ok" : "estado-error", textContent: h.ok ? "Impreso" : "Error: " + h.error }),
+        el("td", {}, cant, " ", precio, " ", btn)
+      ));
+    }
+  }
+
+  // ---------- configuración ----------
+  function pintarConfig() {
+    const bt = config.bartender;
+    $("cfgPlantilla").textContent = bt.plantilla || "Sin plantilla: configúrala en la ventana principal.";
+    if (document.activeElement !== $("impresora")) $("impresora").value = bt.impresora || "";
+    if (!bt.plantilla || !bt.exe) mensaje($("msgCfg"), "Falta la ruta de bartend.exe o la plantilla .btw (ventana principal → Configuración de BarTender).", "warn");
+  }
+  $("btnGuardarCfg").addEventListener("click", async () => {
+    try {
+      config = (await api("/api/config", "PUT", { bartender: { impresora: $("impresora").value.trim().replace(/"/g, "") } })).config;
+      pintarConfig();
+      cargarImpresoras();
+      mensaje($("msgCfg"), "Impresora guardada.", "ok");
+    } catch (err) { mensaje($("msgCfg"), err.message, "error"); }
+  });
+  // Impresoras instaladas en Windows y las ya usadas (guardadas en configuracion\opciones.json)
+  async function cargarImpresoras() {
+    try {
+      const { instaladas, usadas } = await api("/api/impresoras");
+      const lista = $("listaImpresoras");
+      lista.innerHTML = "";
+      [...new Set([...usadas, ...instaladas])].forEach(n => lista.append(el("option", { value: n, label: usadas.includes(n) ? "usada antes" : "" })));
+    } catch (e) { /* se puede escribir a mano */ }
+  }
+  cargarImpresoras();
+  $("btnLog").addEventListener("click", () => api("/api/carpeta", "POST", { cual: "log" }).catch(err => mensaje($("msgHist"), err.message, "error")));
+
+  // ---------- carga y actualización ----------
+  async function cargar() {
+    try {
+      [sesion, config] = await Promise.all([api("/api/sesion"), api("/api/config")]);
+    } catch (err) {
+      mensaje($("msgImprimir"), "No se pudo leer la sesión: " + err.message + "\nSi cerraste el programa, ábrelo de nuevo.", "error");
+      return;
+    }
+    pintarConfig();
+    pintarProductos();
+    pintarHistorial();
+  }
+  $("btnActualizar").addEventListener("click", cargar);
+  // Ctrl+F7: reinicia la sesión (productos de la sesión e historial) y empieza de cero
+  document.addEventListener("keydown", async e => {
+    if (!(e.ctrlKey && e.key === "F7")) return;
+    e.preventDefault();
+    if (!confirm("¿Reiniciar la sesión?\n\nSe borran la lista de productos de esta sesión y el historial de impresión.\nLos productos guardados no se tocan y el log de impresiones se conserva.")) return;
+    try {
+      await api("/api/sesion/reiniciar", "POST", {});
+      estado.clear();
+      if ("BroadcastChannel" in window) new BroadcastChannel("alta-productos").postMessage("sesion");
+      await cargar();
+      mensaje($("msgImprimir"), "Sesión reiniciada: empieza de cero.", "ok");
+    } catch (err) { mensaje($("msgImprimir"), "No se pudo reiniciar la sesión: " + err.message, "error"); }
+  });
+  // Volver a la ventana principal: si esta pestaña se abrió desde allá, se cierra y queda la principal;
+  // si no (se abrió sola), se va a la ventana principal en esta misma pestaña.
+  $("btnVolver").addEventListener("click", () => {
+    if (window.opener && !window.opener.closed) {
+      try { window.opener.focus(); } catch (e) { /* el navegador puede no permitirlo */ }
+      window.close();
+    }
+    setTimeout(() => { location.href = "/"; }, 150); // si el navegador no dejó cerrarla
+  });
+  if ("BroadcastChannel" in window) new BroadcastChannel("alta-productos").onmessage = () => cargar();
+  window.addEventListener("focus", cargar);
+  setInterval(() => { api("/api/latido", "POST", {}).catch(() => {}); }, 30000);
+  cargar();
+})();
+</script>
+</body>
+</html>
