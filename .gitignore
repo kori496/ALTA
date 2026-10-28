@@ -5,11 +5,7 @@ AltaDeProductos/exportados/
 # Opciones de cada PC (rutas, impresoras); el LEEME sí va
 AltaDeProductos/configuracion/opciones.json
 
-# Node portable (90 MB): se copia a mano al armar el .zip
-AltaDeProductos/node/
 
-# Dependencias: se reinstalan con "npm install" dentro de app
-node_modules/
 
 # .zip armado para instalar en los PCs
 *.zip
